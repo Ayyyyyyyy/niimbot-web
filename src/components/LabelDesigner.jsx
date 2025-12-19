@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { Canvas, IText, Rect, Circle, Line, FabricImage } from 'fabric';
+import { Canvas, IText, Rect, Circle, Line, FabricImage, ActiveSelection } from 'fabric';
 import bwipjs from 'bwip-js';
 import { Toolbar, PropertiesPanel } from './Toolbar';
 import { TemplatePicker } from './TemplatePicker';
 import { AIAssistant } from './AIAssistant';
 import { mmToPixels, pixelsToMm } from '../utils/utils';
+import { ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
 
 /**
  * Main canvas label designer component using Fabric.js
@@ -18,11 +19,18 @@ export function LabelDesigner({
     onOpenSettings,
 }) {
     const containerRef = useRef(null);
+    const canvasWrapperRef = useRef(null);
     const fabricRef = useRef(null);
     const [selectedObject, setSelectedObject] = useState(null);
     const [activeTool, setActiveTool] = useState(null);
     const [showTemplatePicker, setShowTemplatePicker] = useState(false);
     const [showAIAssistant, setShowAIAssistant] = useState(false);
+    const [zoom, setZoom] = useState(1);
+
+    // Zoom constants
+    const ZOOM_MIN = 0.25;
+    const ZOOM_MAX = 4;
+    const ZOOM_STEP = 0.25;
 
     // Calculate pixel dimensions
     const widthPx = mmToPixels(widthMm);
@@ -346,6 +354,57 @@ export function LabelDesigner({
         }
     }, []);
 
+    // Select all objects on canvas
+    const handleSelectAll = useCallback(() => {
+        if (!fabricRef.current) return;
+        const objects = fabricRef.current.getObjects();
+        if (objects.length === 0) return;
+
+        // Discard current selection
+        fabricRef.current.discardActiveObject();
+
+        // Create active selection with all objects
+        const selection = new ActiveSelection(objects, {
+            canvas: fabricRef.current,
+        });
+
+        fabricRef.current.setActiveObject(selection);
+        fabricRef.current.renderAll();
+        setSelectedObject(selection);
+    }, []);
+
+    // Zoom handlers
+    const handleZoomIn = useCallback(() => {
+        setZoom(prev => Math.min(prev + ZOOM_STEP, ZOOM_MAX));
+    }, []);
+
+    const handleZoomOut = useCallback(() => {
+        setZoom(prev => Math.max(prev - ZOOM_STEP, ZOOM_MIN));
+    }, []);
+
+    const handleZoomReset = useCallback(() => {
+        setZoom(1);
+    }, []);
+
+    // Handle mouse wheel zoom - use native event listener to properly prevent browser zoom
+    useEffect(() => {
+        const wrapper = canvasWrapperRef.current;
+        if (!wrapper) return;
+
+        const handleWheel = (e) => {
+            if (e.ctrlKey || e.metaKey) {
+                e.preventDefault();
+                e.stopPropagation();
+                const delta = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP;
+                setZoom(prev => Math.min(Math.max(prev + delta, ZOOM_MIN), ZOOM_MAX));
+            }
+        };
+
+        // Use passive: false to allow preventDefault
+        wrapper.addEventListener('wheel', handleWheel, { passive: false });
+        return () => wrapper.removeEventListener('wheel', handleWheel);
+    }, []);
+
     // Load template onto canvas with automatic scaling to fit label size
     const handleLoadTemplate = useCallback(async (template) => {
         if (!fabricRef.current) return;
@@ -466,11 +525,33 @@ export function LabelDesigner({
                 fabricRef.current.discardActiveObject();
                 fabricRef.current.renderAll();
             }
+
+            // Zoom shortcuts (when not editing text)
+            const active = fabricRef.current.getActiveObject();
+            if (active && active.isEditing) return;
+
+            if ((e.ctrlKey || e.metaKey) && (e.key === '=' || e.key === '+')) {
+                e.preventDefault();
+                handleZoomIn();
+            }
+            if ((e.ctrlKey || e.metaKey) && e.key === '-') {
+                e.preventDefault();
+                handleZoomOut();
+            }
+            if ((e.ctrlKey || e.metaKey) && e.key === '0') {
+                e.preventDefault();
+                handleZoomReset();
+            }
+            // Select all (Ctrl+A)
+            if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+                e.preventDefault();
+                handleSelectAll();
+            }
         };
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [handleDelete]);
+    }, [handleDelete, handleZoomIn, handleZoomOut, handleZoomReset, handleSelectAll]);
 
     return (
         <div className="flex-1 flex overflow-hidden">
@@ -490,20 +571,57 @@ export function LabelDesigner({
             </div>
 
             {/* Canvas Area */}
-            <div className="canvas-wrapper flex-1">
-                <div className="relative">
-                    {/* Size indicator */}
-                    <div className="absolute -top-6 left-0 text-xs text-gray-400">
-                        {widthMm}mm × {heightMm}mm ({widthPx}px × {heightPx}px @ 203 DPI)
+            <div ref={canvasWrapperRef} className="canvas-wrapper flex-1 overflow-auto">
+                <div className="relative inline-block" style={{ minWidth: 'fit-content' }}>
+                    {/* Size and zoom indicator */}
+                    <div className="absolute -top-6 left-0 text-xs text-gray-400 flex items-center gap-4">
+                        <span>{widthMm}mm × {heightMm}mm ({widthPx}px × {heightPx}px @ 203 DPI)</span>
+                        <span className="text-highlight">{Math.round(zoom * 100)}%</span>
                     </div>
 
-                    {/* Canvas container */}
+                    {/* Zoom controls */}
+                    <div className="absolute -top-6 right-0 flex items-center gap-1">
+                        <button
+                            onClick={handleZoomOut}
+                            disabled={zoom <= ZOOM_MIN}
+                            className="p-1 hover:bg-gray-700 rounded disabled:opacity-30 disabled:cursor-not-allowed"
+                            title="Zoom out (Ctrl+-)"
+                        >
+                            <ZoomOut size={14} />
+                        </button>
+                        <button
+                            onClick={handleZoomReset}
+                            className="px-2 py-0.5 hover:bg-gray-700 rounded text-xs min-w-[3rem]"
+                            title="Reset zoom (Ctrl+0)"
+                        >
+                            {Math.round(zoom * 100)}%
+                        </button>
+                        <button
+                            onClick={handleZoomIn}
+                            disabled={zoom >= ZOOM_MAX}
+                            className="p-1 hover:bg-gray-700 rounded disabled:opacity-30 disabled:cursor-not-allowed"
+                            title="Zoom in (Ctrl++)"
+                        >
+                            <ZoomIn size={14} />
+                        </button>
+                        <button
+                            onClick={handleZoomReset}
+                            className="p-1 hover:bg-gray-700 rounded ml-1"
+                            title="Fit to view (Ctrl+0)"
+                        >
+                            <Maximize2 size={14} />
+                        </button>
+                    </div>
+
+                    {/* Canvas container with zoom transform */}
                     <div
                         ref={containerRef}
                         className="canvas-container"
                         style={{
                             width: widthPx,
                             height: heightPx,
+                            transform: `scale(${zoom})`,
+                            transformOrigin: 'top left',
                         }}
                     />
                 </div>
@@ -536,6 +654,8 @@ export function LabelDesigner({
                 isOpen={showAIAssistant}
                 onClose={() => setShowAIAssistant(false)}
                 onApplyLabel={handleLoadTemplate}
+                labelWidth={widthMm}
+                labelHeight={heightMm}
             />
         </div>
     );

@@ -1,17 +1,22 @@
-import { useState, useEffect, useCallback } from 'react';
-import { X, Bot, Send, Loader2, Sparkles } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { X, Bot, Send, Loader2, Sparkles, StopCircle } from 'lucide-react';
 import { getLLMSettings, generateLabelDesign } from '../services/llmService';
+import { AIDebugLog } from './AIDebugLog';
 
 /**
  * AI Assistant Modal - simplified, settings-free label generation
  */
-export function AIAssistant({ isOpen, onClose, onApplyLabel }) {
+export function AIAssistant({ isOpen, onClose, onApplyLabel, labelWidth = 50, labelHeight = 15 }) {
     const [prompt, setPrompt] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
     const [error, setError] = useState(null);
     const [generatedLabel, setGeneratedLabel] = useState(null);
     const [history, setHistory] = useState([]);
     const [settings, setSettings] = useState(getLLMSettings());
+    const [debugLogs, setDebugLogs] = useState([]);
+
+    // AbortController for cancelling requests
+    const abortControllerRef = useRef(null);
 
     // Reload settings when modal opens
     useEffect(() => {
@@ -20,9 +25,31 @@ export function AIAssistant({ isOpen, onClose, onApplyLabel }) {
         }
     }, [isOpen]);
 
+    // Cleanup on unmount
+    useEffect(() => {
+        return () => {
+            if (abortControllerRef.current) {
+                abortControllerRef.current.abort();
+            }
+        };
+    }, []);
+
+    // Cancel generation
+    const handleCancel = useCallback(() => {
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+            abortControllerRef.current = null;
+        }
+        setIsGenerating(false);
+        setHistory(prev => [...prev, { role: 'system', content: 'Generation cancelled by user.' }]);
+    }, []);
+
     // Generate label from prompt
     const handleGenerate = useCallback(async () => {
         if (!prompt.trim()) return;
+
+        // Create new AbortController for this request
+        abortControllerRef.current = new AbortController();
 
         setIsGenerating(true);
         setError(null);
@@ -32,16 +59,33 @@ export function AIAssistant({ isOpen, onClose, onApplyLabel }) {
         setHistory(prev => [...prev, { role: 'user', content: prompt }]);
 
         try {
-            const result = await generateLabelDesign(prompt);
-            setGeneratedLabel(result);
-            setHistory(prev => [...prev, { role: 'assistant', content: JSON.stringify(result, null, 2) }]);
+            const result = await generateLabelDesign(prompt, abortControllerRef.current.signal, { width: labelWidth, height: labelHeight });
+
+            // Extract and store the debug log
+            if (result.log) {
+                setDebugLogs(prev => [...prev, result.log]);
+            }
+
+            // Remove log from the label result before storing
+            const { log, ...labelData } = result;
+            setGeneratedLabel(labelData);
+            setHistory(prev => [...prev, { role: 'assistant', content: JSON.stringify(labelData, null, 2) }]);
             setPrompt(''); // Clear input on success
         } catch (err) {
+            // Don't show error if it was cancelled
+            if (err.name === 'AbortError') {
+                return;
+            }
+            // Capture error log if available
+            if (err.log) {
+                setDebugLogs(prev => [...prev, err.log]);
+            }
             setError(err.message);
             setHistory(prev => [...prev, { role: 'error', content: err.message }]);
+        } finally {
+            setIsGenerating(false);
+            abortControllerRef.current = null;
         }
-
-        setIsGenerating(false);
     }, [prompt]);
 
     // Apply generated label
@@ -80,16 +124,8 @@ export function AIAssistant({ isOpen, onClose, onApplyLabel }) {
                 {/* Not Configured Warning */}
                 {!isConfigured && (
                     <div className="p-4 bg-yellow-500/10 border-b border-yellow-500/20">
-                        <div className="flex items-center justify-between">
-                            <div className="text-yellow-400 text-sm">
-                                <strong>AI not configured.</strong> Please set up your LLM provider in Settings.
-                            </div>
-                            <button
-                                onClick={() => { onClose(); onOpenSettings?.(); }}
-                                className="px-3 py-1 bg-yellow-500 hover:bg-yellow-400 text-black text-sm font-medium rounded-lg"
-                            >
-                                Open Settings
-                            </button>
+                        <div className="text-yellow-400 text-sm">
+                            <strong>AI not configured.</strong> Please set up your LLM provider in Settings (gear icon in top bar).
                         </div>
                     </div>
                 )}
@@ -114,11 +150,13 @@ export function AIAssistant({ isOpen, onClose, onApplyLabel }) {
                                 ? 'bg-highlight/20 ml-8'
                                 : msg.role === 'error'
                                     ? 'bg-red-500/20 mr-8'
-                                    : 'bg-gray-700/50 mr-8'
+                                    : msg.role === 'system'
+                                        ? 'bg-yellow-500/20 mr-8 text-yellow-400'
+                                        : 'bg-gray-700/50 mr-8'
                                 }`}
                         >
                             <div className="text-xs text-gray-400 mb-1">
-                                {msg.role === 'user' ? 'You' : msg.role === 'error' ? 'Error' : 'AI'}
+                                {msg.role === 'user' ? 'You' : msg.role === 'error' ? 'Error' : msg.role === 'system' ? 'System' : 'AI'}
                             </div>
                             <div className="text-sm whitespace-pre-wrap">
                                 {msg.content}
@@ -127,9 +165,18 @@ export function AIAssistant({ isOpen, onClose, onApplyLabel }) {
                     ))}
 
                     {isGenerating && (
-                        <div className="flex items-center gap-2 text-gray-400 p-3">
-                            <Loader2 size={16} className="animate-spin" />
-                            Generating label design...
+                        <div className="flex items-center justify-between p-3 bg-blue-500/10 rounded-lg">
+                            <div className="flex items-center gap-2 text-blue-400">
+                                <Loader2 size={16} className="animate-spin" />
+                                Generating label design...
+                            </div>
+                            <button
+                                onClick={handleCancel}
+                                className="px-3 py-1 bg-red-500/20 hover:bg-red-500/40 text-red-400 rounded-lg flex items-center gap-1 text-sm"
+                            >
+                                <StopCircle size={14} />
+                                Cancel
+                            </button>
                         </div>
                     )}
                 </div>
@@ -165,7 +212,7 @@ export function AIAssistant({ isOpen, onClose, onApplyLabel }) {
                             type="text"
                             value={prompt}
                             onChange={(e) => setPrompt(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleGenerate()}
+                            onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && !isGenerating && handleGenerate()}
                             placeholder="Describe the label you want to create..."
                             className="flex-1 px-4 py-3 bg-canvas-bg rounded-lg border border-gray-600 focus:border-highlight focus:outline-none"
                             disabled={isGenerating || !isConfigured}
@@ -183,6 +230,9 @@ export function AIAssistant({ isOpen, onClose, onApplyLabel }) {
                         Provider: {providerName}
                     </p>
                 </div>
+
+                {/* Debug Logs Dropdown */}
+                <AIDebugLog logs={debugLogs} />
             </div>
         </div>
     );

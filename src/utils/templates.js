@@ -181,98 +181,204 @@ export const LABEL_TEMPLATES = [
         ],
     },
 
-    // Prescription-style templates
-    // Note: 50mm = 400px, 15mm = 120px, 30mm = 240px at 203 DPI
+    // Medical Templates - Professional layouts based on PeptiPrints style
+    // Note: 50mm = 400px, 15mm = 120px, 30mm = 240px at 203 DPI (~8px/mm)
+
     {
-        id: 'rx-vial-50x15',
-        name: 'Rx Vial (50×15)',
-        description: 'Prescription vial label - fits 50×15mm',
-        category: 'Medical',
-        labelSize: { width: 50, height: 15 },
-        objects: [
-            // Border - full label
-            { type: 'rect', left: 4, top: 4, width: 390, height: 110, stroke: '#000000', strokeWidth: 2 },
-            // Rx symbol
-            { type: 'text', text: '℞', left: 15, top: 10, fontSize: 28, fontWeight: 'bold' },
-            // Drug name - large
-            { type: 'text', text: 'COMPOUND', left: 55, top: 8, fontSize: 22, fontWeight: 'bold' },
-            // Strength
-            { type: 'text', text: '10mg', left: 320, top: 8, fontSize: 22, fontWeight: 'bold' },
-            // Divider line
-            { type: 'line', left: 10, top: 50, x1: 0, y1: 0, x2: 378, y2: 0 },
-            // Bottom row - dosing and vendor
-            { type: 'text', text: '2mL BAC | 10u = 0.5mg', left: 55, top: 60, fontSize: 16 },
-            { type: 'text', text: '__/__/__', left: 250, top: 60, fontSize: 14 },
-            { type: 'text', text: '___', left: 360, top: 88, fontSize: 14, textAlign: 'right' },
-        ],
-    },
-    {
-        id: 'rx-standard',
-        name: 'Rx Label (Standard)',
-        description: 'Prescription style - 50×30mm',
+        id: 'peptide-pro-50x30',
+        name: 'Peptide Pro (50×30)',
+        description: 'Professional layout with QR code',
         category: 'Medical',
         labelSize: { width: 50, height: 30 },
         objects: [
-            // Border - full label (50mm=400px, 30mm=240px)
-            { type: 'rect', left: 4, top: 4, width: 390, height: 230, stroke: '#000000', strokeWidth: 2 },
-            // Rx symbol
-            { type: 'text', text: '℞', left: 15, top: 12, fontSize: 36, fontWeight: 'bold' },
-            // Drug name
-            { type: 'text', text: 'COMPOUND NAME', left: 70, top: 15, fontSize: 24, fontWeight: 'bold' },
-            // Strength
-            { type: 'text', text: '10mg/mL', left: 70, top: 50, fontSize: 20 },
-            // Divider line
-            { type: 'line', left: 10, top: 85, x1: 0, y1: 0, x2: 378, y2: 0 },
-            // Instructions
-            { type: 'text', text: 'Inject 0.5mL SubQ weekly', left: 15, top: 95, fontSize: 18 },
-            // Reconstitution
-            { type: 'text', text: '2mL BAC Water | 10 units = 0.5mg', left: 15, top: 130, fontSize: 16 },
-            // Divider line
-            { type: 'line', left: 10, top: 165, x1: 0, y1: 0, x2: 378, y2: 0 },
-            // Date and lot
-            { type: 'text', text: 'Date: __/__/__', left: 15, top: 175, fontSize: 14 },
-            { type: 'text', text: 'Lot: ______', left: 200, top: 175, fontSize: 14 },
-            // Vendor
-            { type: 'text', text: '___', left: 370, top: 200, fontSize: 14, textAlign: 'right' },
+            // Black header bar with compound name
+            { type: 'rect', left: 0, top: 0, width: 400, height: 45, fill: '#000000', stroke: 'transparent' },
+            { type: 'text', text: 'COMPOUND NAME', left: 200, top: 5, fontSize: 28, fontWeight: 'bold', textAlign: 'center', fill: '#ffffff' },
+
+            // Dosage box with border (left side)
+            { type: 'rect', left: 10, top: 55, width: 100, height: 50, stroke: '#cc0000', strokeWidth: 3, fill: 'transparent' },
+            { type: 'text', text: '10 mg', left: 60, top: 60, fontSize: 24, fontWeight: 'bold', textAlign: 'center' },
+
+            // Lot number below dosage
+            { type: 'rect', left: 10, top: 115, width: 100, height: 30, stroke: '#000000', strokeWidth: 1, fill: 'transparent' },
+            { type: 'text', text: 'LOT123456', left: 60, top: 118, fontSize: 12, textAlign: 'center' },
+
+            // QR code area (center)
+            { type: 'qrcode', value: 'https://example.com/verify', left: 155, top: 60 },
+
+            // "For Research use only" - vertical text indicator
+            { type: 'text', text: 'Research Only', left: 130, top: 70, fontSize: 8, angle: -90 },
+
+            // Expiry date box (right side) - vertical
+            { type: 'rect', left: 340, top: 55, width: 50, height: 90, stroke: '#cc0000', strokeWidth: 3, fill: 'transparent' },
+            { type: 'text', text: 'DEC', left: 365, top: 65, fontSize: 14, fontWeight: 'bold', textAlign: 'center' },
+            { type: 'text', text: '2025', left: 365, top: 100, fontSize: 14, fontWeight: 'bold', textAlign: 'center' },
+
+            // Bottom row - reconstitution info
+            { type: 'text', text: '2mL BAC | 10u = 0.5mg', left: 200, top: 155, fontSize: 12, textAlign: 'center' },
+
+            // Vendor code
+            { type: 'text', text: 'VND', left: 380, top: 155, fontSize: 10, textAlign: 'right' },
         ],
     },
     {
         id: 'peptide-pro-50x15',
         name: 'Peptide Pro (50×15)',
-        description: 'Professional peptide - 50×15mm',
+        description: 'Compact professional layout',
         category: 'Medical',
         labelSize: { width: 50, height: 15 },
         objects: [
-            // Top accent bar
-            { type: 'rect', left: 0, top: 0, width: 400, height: 8, fill: '#000000', stroke: 'transparent' },
-            // Name - centered
-            { type: 'text', text: 'RETATRUTIDE', left: 200, top: 15, fontSize: 24, fontWeight: 'bold', textAlign: 'center' },
-            // Strength badge
-            { type: 'rect', left: 150, top: 50, width: 100, height: 30, stroke: '#000000', strokeWidth: 2 },
-            { type: 'text', text: '10 mg', left: 200, top: 53, fontSize: 20, fontWeight: 'bold', textAlign: 'center' },
-            // Bottom info
-            { type: 'text', text: '2mL BAC | 10u=0.5mg', left: 200, top: 90, fontSize: 14, textAlign: 'center' },
-            { type: 'text', text: '___', left: 380, top: 95, fontSize: 12, textAlign: 'right' },
+            // Black header bar with compound name
+            { type: 'rect', left: 0, top: 0, width: 400, height: 30, fill: '#000000', stroke: 'transparent' },
+            { type: 'text', text: 'COMPOUND', left: 200, top: 2, fontSize: 20, fontWeight: 'bold', textAlign: 'center', fill: '#ffffff' },
+
+            // Dosage box with red border (left)
+            { type: 'rect', left: 8, top: 38, width: 70, height: 35, stroke: '#cc0000', strokeWidth: 2, fill: 'transparent' },
+            { type: 'text', text: '10 mg', left: 43, top: 42, fontSize: 18, fontWeight: 'bold', textAlign: 'center' },
+
+            // Lot number (below dosage)
+            { type: 'text', text: 'LOT123456', left: 43, top: 80, fontSize: 8, textAlign: 'center' },
+
+            // QR code (center)
+            { type: 'qrcode', value: 'https://verify.example.com', left: 165, top: 35 },
+
+            // Expiry box (right side)
+            { type: 'rect', left: 330, top: 38, width: 60, height: 55, stroke: '#cc0000', strokeWidth: 2, fill: 'transparent' },
+            { type: 'text', text: 'DEC', left: 360, top: 42, fontSize: 12, fontWeight: 'bold', textAlign: 'center' },
+            { type: 'text', text: '2025', left: 360, top: 62, fontSize: 12, fontWeight: 'bold', textAlign: 'center' },
+
+            // Dosing info (bottom)
+            { type: 'text', text: '2mL BAC | 10u=0.5mg', left: 200, top: 100, fontSize: 9, textAlign: 'center' },
+        ],
+    },
+    {
+        id: 'peptide-minimal',
+        name: 'Peptide Minimal (50×15)',
+        description: 'Clean minimal design',
+        category: 'Medical',
+        labelSize: { width: 50, height: 15 },
+        objects: [
+            // Compound name - large bold
+            { type: 'text', text: 'RETATRUTIDE', left: 200, top: 5, fontSize: 24, fontWeight: 'bold', textAlign: 'center' },
+
+            // Divider line
+            { type: 'line', left: 20, top: 40, x1: 0, y1: 0, x2: 360, y2: 0, stroke: '#000000', strokeWidth: 1 },
+
+            // Info row: Dosage | Reconstitution | Date
+            { type: 'text', text: '10mg', left: 40, top: 50, fontSize: 16, fontWeight: 'bold' },
+            { type: 'text', text: '|', left: 100, top: 50, fontSize: 16 },
+            { type: 'text', text: '2mL BAC', left: 140, top: 50, fontSize: 14 },
+            { type: 'text', text: '|', left: 230, top: 50, fontSize: 16 },
+            { type: 'text', text: '10u = 0.5mg', left: 270, top: 50, fontSize: 14 },
+
+            // Bottom row: Vendor and Date
+            { type: 'text', text: '__/__/__', left: 40, top: 85, fontSize: 12 },
+            { type: 'text', text: 'VND', left: 360, top: 85, fontSize: 12, textAlign: 'right' },
+
+            // Divider line bottom
+            { type: 'line', left: 20, top: 110, x1: 0, y1: 0, x2: 360, y2: 0, stroke: '#000000', strokeWidth: 1 },
+        ],
+    },
+    {
+        id: 'peptide-atom',
+        name: 'Peptide with Atom Icon (50×30)',
+        description: 'Professional with atom symbol',
+        category: 'Medical',
+        labelSize: { width: 50, height: 30 },
+        objects: [
+            // Black header bar
+            { type: 'rect', left: 0, top: 0, width: 400, height: 45, fill: '#000000', stroke: 'transparent' },
+            { type: 'text', text: 'COMPOUND NAME', left: 200, top: 5, fontSize: 26, fontWeight: 'bold', textAlign: 'center', fill: '#ffffff' },
+
+            // Dosage with border
+            { type: 'rect', left: 15, top: 55, width: 90, height: 45, stroke: '#000000', strokeWidth: 2, fill: 'transparent' },
+            { type: 'text', text: '10 mg', left: 60, top: 58, fontSize: 22, fontWeight: 'bold', textAlign: 'center' },
+
+            // Lot number
+            { type: 'rect', left: 15, top: 110, width: 90, height: 25, stroke: '#000000', strokeWidth: 1, fill: 'transparent' },
+            { type: 'text', text: 'LOT12345', left: 60, top: 112, fontSize: 12, textAlign: 'center' },
+
+            // Atom symbol area (center) - using ⚛ unicode
+            { type: 'text', text: '⚛', left: 200, top: 55, fontSize: 60, textAlign: 'center' },
+
+            // Expiry box (right)
+            { type: 'rect', left: 300, top: 55, width: 85, height: 80, stroke: '#000000', strokeWidth: 2, fill: 'transparent' },
+            { type: 'text', text: 'EXP', left: 342, top: 60, fontSize: 12, textAlign: 'center' },
+            { type: 'text', text: '12/25', left: 342, top: 85, fontSize: 18, fontWeight: 'bold', textAlign: 'center' },
+
+            // Reconstitution 
+            { type: 'text', text: '2mL BAC | 10u = 0.5mg', left: 200, top: 150, fontSize: 14, textAlign: 'center' },
+
+            // Vendor
+            { type: 'text', text: 'VENDOR', left: 380, top: 175, fontSize: 10, textAlign: 'right' },
+
+            // Research notice
+            { type: 'text', text: 'For Research Use Only', left: 200, top: 175, fontSize: 8, textAlign: 'center' },
+        ],
+    },
+    {
+        id: 'rx-standard',
+        name: 'Rx Label (50×30)',
+        description: 'Prescription style format',
+        category: 'Medical',
+        labelSize: { width: 50, height: 30 },
+        objects: [
+            // Border - full label
+            { type: 'rect', left: 4, top: 4, width: 390, height: 230, stroke: '#000000', strokeWidth: 2 },
+
+            // Rx symbol
+            { type: 'text', text: '℞', left: 20, top: 8, fontSize: 36, fontWeight: 'bold' },
+
+            // Drug name
+            { type: 'text', text: 'COMPOUND NAME', left: 80, top: 12, fontSize: 24, fontWeight: 'bold' },
+
+            // Strength
+            { type: 'text', text: '10mg / vial', left: 80, top: 48, fontSize: 18 },
+
+            // Divider line
+            { type: 'line', left: 15, top: 80, x1: 0, y1: 0, x2: 368, y2: 0, stroke: '#000000', strokeWidth: 1 },
+
+            // Instructions
+            { type: 'text', text: 'Reconstituted with 2mL BAC Water', left: 20, top: 88, fontSize: 14 },
+            { type: 'text', text: '10 units = 0.5mg', left: 20, top: 112, fontSize: 16, fontWeight: 'bold' },
+
+            // Divider line
+            { type: 'line', left: 15, top: 145, x1: 0, y1: 0, x2: 368, y2: 0, stroke: '#000000', strokeWidth: 1 },
+
+            // Date and lot
+            { type: 'text', text: 'Date: __/__/__', left: 20, top: 155, fontSize: 14 },
+            { type: 'text', text: 'Lot: ______', left: 200, top: 155, fontSize: 14 },
+
+            // Expiry
+            { type: 'text', text: 'Exp: __/__/__', left: 20, top: 180, fontSize: 14 },
+
+            // Vendor
+            { type: 'text', text: 'Source: ___', left: 200, top: 180, fontSize: 14 },
+
+            // Research notice
+            { type: 'text', text: 'FOR RESEARCH USE ONLY', left: 200, top: 210, fontSize: 10, textAlign: 'center' },
         ],
     },
     {
         id: 'simple-vial',
         name: 'Simple Vial (50×15)',
-        description: 'Clean minimal vial label',
+        description: 'Clean 3-line layout',
         category: 'Medical',
         labelSize: { width: 50, height: 15 },
         objects: [
-            // Top line
-            { type: 'line', left: 10, top: 5, x1: 0, y1: 0, x2: 380, y2: 0 },
-            // Drug name - large centered
-            { type: 'text', text: 'RETATRUTIDE', left: 200, top: 15, fontSize: 28, fontWeight: 'bold', textAlign: 'center' },
-            // Strength and dosing
-            { type: 'text', text: '10mg | 2mL BAC | 10u=0.5mg', left: 200, top: 55, fontSize: 18, textAlign: 'center' },
-            // Date and vendor
-            { type: 'text', text: '__/__/__', left: 20, top: 90, fontSize: 14 },
-            { type: 'text', text: '___', left: 380, top: 90, fontSize: 14, textAlign: 'right' },
-            // Bottom line
-            { type: 'line', left: 10, top: 112, x1: 0, y1: 0, x2: 380, y2: 0 },
+            // Compound name - top line
+            { type: 'text', text: 'RETATRUTIDE', left: 200, top: 5, fontSize: 22, fontWeight: 'bold', textAlign: 'center' },
+
+            // Dosage and reconstitution - middle line
+            { type: 'text', text: '10mg | 2mL BAC | 10u=0.5mg', left: 200, top: 40, fontSize: 14, textAlign: 'center' },
+
+            // Date, Lot, Vendor - bottom line
+            { type: 'text', text: '__/__/__', left: 50, top: 75, fontSize: 11 },
+            { type: 'text', text: 'LOT: ______', left: 180, top: 75, fontSize: 11 },
+            { type: 'text', text: '___', left: 350, top: 75, fontSize: 11 },
+
+            // Bottom accent line
+            { type: 'line', left: 10, top: 105, x1: 0, y1: 0, x2: 380, y2: 0, stroke: '#000000', strokeWidth: 2 },
         ],
     },
 
