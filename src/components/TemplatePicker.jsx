@@ -62,14 +62,9 @@ export function TemplatePicker({ isOpen, onClose, onSelectTemplate }) {
 
     // Handle template selection with vendor and label size override
     const handleSelect = (template) => {
-        // Clone template and apply vendor + label size
+        // Clone template but KEEP original size for scaling calculations
         const templateToApply = {
             ...template,
-            // Override with selected label size
-            labelSize: {
-                width: selectedLabelSize.width,
-                height: selectedLabelSize.height,
-            },
             objects: template.objects.map(obj => {
                 if (obj.text === '___' || obj.text === 'VND') {
                     return { ...obj, text: selectedVendor || '___' };
@@ -77,7 +72,12 @@ export function TemplatePicker({ isOpen, onClose, onSelectTemplate }) {
                 return obj;
             }),
         };
-        onSelectTemplate(templateToApply);
+
+        // Pass both the template AND the target size
+        onSelectTemplate(templateToApply, {
+            width: selectedLabelSize.width,
+            height: selectedLabelSize.height
+        });
         onClose();
     };
 

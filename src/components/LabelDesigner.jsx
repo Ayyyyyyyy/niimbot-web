@@ -5,7 +5,7 @@ import { Toolbar, PropertiesPanel } from './Toolbar';
 import { TemplatePicker } from './TemplatePicker';
 import { AIAssistant } from './AIAssistant';
 import { mmToPixels, pixelsToMm } from '../utils/utils';
-import { ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize2, Magnet, Undo, Redo } from 'lucide-react';
 
 /**
  * Main canvas label designer component using Fabric.js
@@ -36,6 +36,26 @@ export function LabelDesigner({
     const widthPx = mmToPixels(widthMm);
     const heightPx = mmToPixels(heightMm);
 
+    // Interaction modes: 'select', 'pan'
+    const [interactionMode, setInteractionMode] = useState('select');
+    const [backgroundColor, setBackgroundColor] = useState('#ffffff');
+    const [snapEnabled, setSnapEnabled] = useState(false);
+    const isDraggingRef = useRef(false);
+    const lastPosXRef = useRef(0);
+    const lastPosYRef = useRef(0);
+    const panPositionRef = useRef({ x: 0, y: 0 });
+    const snapEnabledRef = useRef(snapEnabled);
+
+    // Undo/Redo State
+    const [history, setHistory] = useState([]);
+    const [historyStep, setHistoryStep] = useState(-1);
+    const isHistoryProcessing = useRef(false);
+
+    // Update ref when state changes
+    useEffect(() => {
+        snapEnabledRef.current = snapEnabled;
+    }, [snapEnabled]);
+
     // Initialize Fabric canvas
     useEffect(() => {
         if (!containerRef.current) return;
@@ -49,9 +69,10 @@ export function LabelDesigner({
 
         // Initialize Fabric canvas
         const fabricCanvas = new Canvas(canvasEl, {
-            backgroundColor: '#ffffff',
-            selection: true,
+            backgroundColor: backgroundColor,
             preserveObjectStacking: true,
+            // Disable default selection in pan mode
+            selection: interactionMode === 'select',
         });
 
         fabricRef.current = fabricCanvas;
@@ -83,7 +104,221 @@ export function LabelDesigner({
         fabricCanvas.on('object:modified', () => {
             const active = fabricCanvas.getActiveObject();
             if (active) {
-                setSelectedObject({ ...active });
+                setSelectedObject({ ...active, type: active.type });
+            }
+        });
+
+        // Text editing events
+        fabricCanvas.on('text:changed', () => {
+            const active = fabricCanvas.getActiveObject();
+            if (active) {
+                setSelectedObject({ ...active, type: active.type });
+            }
+        });
+
+        fabricCanvas.on('text:editing:entered', () => {
+            const active = fabricCanvas.getActiveObject();
+            if (active) {
+                setSelectedObject({ ...active, type: active.type });
+            }
+        });
+
+        // Smart Snap (Smart Guides)
+        fabricCanvas.on('object:moving', (e) => {
+            if (!snapEnabledRef.current) return;
+
+            const obj = e.target;
+            const threshold = 6 / zoom; // Lower threshold (6px) for smarter feeling
+            const canvasWidth = widthPx;
+            const canvasHeight = heightPx;
+
+            // Clear existing guides
+            fabricCanvas.getObjects('line').forEach((o) => {
+                if (o.id && o.id.startsWith('guide-')) {
+                    fabricCanvas.remove(o);
+                }
+            });
+
+            // Get all other objects to snap to
+            const otherObjects = fabricCanvas.getObjects().filter(o =>
+                o !== obj &&
+                o.id !== 'guide-h' &&
+                o.id !== 'guide-v' &&
+                !o.id?.startsWith('guide-') &&
+                o.visible &&
+                o.evented
+            );
+
+            // Collect snap candidates (Vertical lines)
+            const verticalCandidates = [
+                { x: 0, type: 'canvas' },
+                { x: canvasWidth / 2, type: 'canvas' },
+                { x: canvasWidth, type: 'canvas' }
+            ];
+
+            // Collect snap candidates (Horizontal lines)
+            const horizontalCandidates = [
+                { y: 0, type: 'canvas' },
+                { y: canvasHeight / 2, type: 'canvas' },
+                { y: canvasHeight, type: 'canvas' }
+            ];
+
+            // Add other objects' edges/centers as candidates
+            otherObjects.forEach(target => {
+                const tb = target.getBoundingRect();
+                verticalCandidates.push(
+                    { x: tb.left, type: 'object' },
+                    { x: tb.left + tb.width / 2, type: 'object' },
+                    { x: tb.left + tb.width, type: 'object' }
+                );
+                horizontalCandidates.push(
+                    { y: tb.top, type: 'object' },
+                    { y: tb.top + tb.height / 2, type: 'object' },
+                    { y: tb.top + tb.height, type: 'object' }
+                );
+            });
+
+            // Calculate Object's current bounds
+            const b = obj.getBoundingRect(true); // Absolute coords
+
+            // Points on the moving object we want to align: [Left, Center, Right]
+            const objVPoints = [
+                { x: b.left, offset: 0 },
+                { x: b.left + b.width / 2, offset: b.width / 2 },
+                { x: b.left + b.width, offset: b.width }
+            ];
+
+            // Points on the moving object we want to align: [Top, Center, Bottom]
+            const objHPoints = [
+                { y: b.top, offset: 0 },
+                { y: b.top + b.height / 2, offset: b.height / 2 },
+                { y: b.top + b.height, offset: b.height }
+            ];
+
+            let bestDx = null;
+            let bestDy = null;
+            let snapX = null;
+            let snapY = null;
+
+            // Find best Vertical snap
+            for (const cand of verticalCandidates) {
+                for (const point of objVPoints) {
+                    const dist = cand.x - point.x;
+                    if (Math.abs(dist) < threshold) {
+                        // Prioritize smaller distance
+                        if (bestDx === null || Math.abs(dist) < Math.abs(bestDx)) {
+                            bestDx = dist;
+                            snapX = cand.x;
+                        }
+                    }
+                }
+            }
+
+            // Find best Horizontal snap
+            for (const cand of horizontalCandidates) {
+                for (const point of objHPoints) {
+                    const dist = cand.y - point.y;
+                    if (Math.abs(dist) < threshold) {
+                        if (bestDy === null || Math.abs(dist) < Math.abs(bestDy)) {
+                            bestDy = dist;
+                            snapY = cand.y;
+                        }
+                    }
+                }
+            }
+
+            // Apply Snap
+            if (bestDx !== null) {
+                obj.left += bestDx;
+                obj.setCoords();
+            }
+            if (bestDy !== null) {
+                obj.top += bestDy;
+                obj.setCoords();
+            }
+
+            // Draw Guides (Visual Feedback)
+            if (snapX !== null) {
+                const line = new Line([snapX, 0, snapX, canvasHeight], {
+                    stroke: 'cyan',
+                    strokeWidth: 1 / zoom,
+                    selectable: false,
+                    evented: false,
+                    strokeDashArray: [4, 4],
+                    id: 'guide-v',
+                });
+                fabricCanvas.add(line);
+            }
+
+            if (snapY !== null) {
+                const line = new Line([0, snapY, canvasWidth, snapY], {
+                    stroke: 'cyan',
+                    strokeWidth: 1 / zoom,
+                    selectable: false,
+                    evented: false,
+                    strokeDashArray: [4, 4],
+                    id: 'guide-h',
+                });
+                fabricCanvas.add(line);
+            }
+        });
+        const clearGuidelines = () => {
+            fabricCanvas.getObjects('line').forEach((o) => {
+                if (o.id && o.id.startsWith('guide-')) {
+                    fabricCanvas.remove(o);
+                }
+            });
+        };
+
+
+        // Clear guidelines on mouse up
+        fabricCanvas.on('mouse:up', () => {
+            fabricCanvas.getObjects('line').forEach((o) => {
+                if (o.id && (o.id === 'guide-v' || o.id === 'guide-h')) {
+                    fabricCanvas.remove(o);
+                }
+            });
+            fabricCanvas.requestRenderAll();
+        });
+
+        // Panning Handlers (Infinite Canvas via CSS Transform)
+        fabricCanvas.on('mouse:down', (opt) => {
+            const evt = opt.e;
+            if (interactionModeRef.current === 'pan') {
+                isDraggingRef.current = true;
+                fabricCanvas.selection = false;
+                lastPosXRef.current = evt.clientX;
+                lastPosYRef.current = evt.clientY;
+                fabricCanvas.defaultCursor = 'grabbing';
+            }
+        });
+
+        fabricCanvas.on('mouse:move', (opt) => {
+            if (isDraggingRef.current && interactionModeRef.current === 'pan') {
+                const e = opt.e;
+
+                // Calculate delta
+                const deltaX = e.clientX - lastPosXRef.current;
+                const deltaY = e.clientY - lastPosYRef.current;
+
+                // Update pan position
+                panPositionRef.current.x += deltaX;
+                panPositionRef.current.y += deltaY;
+
+                // Apply transform directly to parent container for performance
+                if (containerRef.current && containerRef.current.parentElement) {
+                    containerRef.current.parentElement.style.transform = `translate(${panPositionRef.current.x}px, ${panPositionRef.current.y}px)`;
+                }
+
+                lastPosXRef.current = e.clientX;
+                lastPosYRef.current = e.clientY;
+            }
+        });
+
+        fabricCanvas.on('mouse:up', () => {
+            if (isDraggingRef.current) {
+                isDraggingRef.current = false;
+                fabricCanvas.defaultCursor = 'grab';
             }
         });
 
@@ -91,7 +326,129 @@ export function LabelDesigner({
         return () => {
             fabricCanvas.dispose();
         };
-    }, [widthPx, heightPx]);
+    }, [widthPx, heightPx]); // Re-init on size change (simplest approach)
+
+    // Undo/Redo Logic
+    const saveHistory = useCallback(() => {
+        if (!fabricRef.current || isHistoryProcessing.current) return;
+
+        // Save current state
+        const json = JSON.stringify(fabricRef.current.toJSON(['id', 'selectable', 'evented']));
+
+        // If we are in the middle of history, discard future
+        const newHistory = history.slice(0, historyStep + 1);
+        newHistory.push(json);
+
+        // Limit history size
+        if (newHistory.length > 50) {
+            newHistory.shift();
+        }
+
+        setHistory(newHistory);
+        setHistoryStep(newHistory.length - 1);
+    }, [history, historyStep]);
+
+    // Attach history listeners
+    useEffect(() => {
+        if (!fabricRef.current) return;
+        const canvas = fabricRef.current;
+
+        const handleSave = () => saveHistory();
+
+        // Save initial state if empty
+        if (history.length === 0) {
+            saveHistory();
+        }
+
+        canvas.on('object:added', handleSave);
+        canvas.on('object:removed', handleSave);
+        canvas.on('object:modified', handleSave);
+
+        return () => {
+            canvas.off('object:added', handleSave);
+            canvas.off('object:removed', handleSave);
+            canvas.off('object:modified', handleSave);
+        };
+    }, [fabricRef.current, saveHistory]);
+
+    const handleUndo = async () => {
+        if (historyStep <= 0 || !fabricRef.current) return;
+
+        isHistoryProcessing.current = true;
+        const previousState = history[historyStep - 1];
+
+        try {
+            await fabricRef.current.loadFromJSON(previousState);
+            fabricRef.current.renderAll();
+        } finally {
+            isHistoryProcessing.current = false;
+        }
+
+        setHistoryStep(historyStep - 1);
+    };
+
+    const handleRedo = async () => {
+        if (historyStep >= history.length - 1 || !fabricRef.current) return;
+
+        isHistoryProcessing.current = true;
+        const nextState = history[historyStep + 1];
+
+        try {
+            await fabricRef.current.loadFromJSON(nextState);
+            fabricRef.current.renderAll();
+        } finally {
+            isHistoryProcessing.current = false;
+        }
+
+        setHistoryStep(historyStep + 1);
+    };
+
+    // Update selection mode when interaction mode changes
+    useEffect(() => {
+        if (fabricRef.current) {
+            // Enable/disable group selection based on mode
+            fabricRef.current.selection = interactionMode === 'select';
+            // Also ensure all objects are selectable/evented based on mode if needed
+            // But usually just toggling canvas.selection is enough for the drag box.
+            // Individual object selection is handled by Fabric default.
+        }
+    }, [interactionMode]);
+
+    // Update background color
+    useEffect(() => {
+        if (!fabricRef.current) return;
+        fabricRef.current.backgroundColor = backgroundColor;
+        fabricRef.current.renderAll();
+    }, [backgroundColor]);
+
+    // Handle interaction mode changes
+    const interactionModeRef = useRef(interactionMode);
+    useEffect(() => {
+        interactionModeRef.current = interactionMode;
+        if (!fabricRef.current) return;
+
+        fabricRef.current.selection = interactionMode === 'select';
+        fabricRef.current.defaultCursor = interactionMode === 'pan' ? 'grab' : 'default';
+
+        // If switching to pan, discard selection
+        if (interactionMode === 'pan') {
+            fabricRef.current.discardActiveObject();
+            fabricRef.current.renderAll();
+        }
+    }, [interactionMode]);
+
+    // Handle zoom updates
+    useEffect(() => {
+        if (!fabricRef.current) return;
+
+        const canvas = fabricRef.current;
+        canvas.setDimensions({
+            width: widthPx * zoom,
+            height: heightPx * zoom
+        });
+        canvas.setZoom(zoom);
+        canvas.renderAll();
+    }, [zoom, widthPx, heightPx]);
 
     // Add text to canvas
     const handleAddText = useCallback(() => {
@@ -350,7 +707,7 @@ export function LabelDesigner({
         if (active) {
             active.set(property, value);
             fabricRef.current.renderAll();
-            setSelectedObject({ ...active });
+            setSelectedObject({ ...active, type: active.type });
         }
     }, []);
 
@@ -405,107 +762,148 @@ export function LabelDesigner({
         return () => wrapper.removeEventListener('wheel', handleWheel);
     }, []);
 
-    // Load template onto canvas with automatic scaling to fit label size
-    const handleLoadTemplate = useCallback(async (template) => {
+    const [currentTemplate, setCurrentTemplate] = useState(null);
+    const isLoadingTemplate = useRef(false);
+
+    // Re-apply template when label size changes
+    useEffect(() => {
+        if (currentTemplate && !isLoadingTemplate.current) {
+            handleLoadTemplate(currentTemplate);
+        }
+    }, [widthMm, heightMm]);
+
+    // Load template onto canvas with automatic scaling to fit current label size
+    const handleLoadTemplate = useCallback(async (template, targetSize) => {
         if (!fabricRef.current) return;
 
-        // Clear existing objects
-        fabricRef.current.clear();
-        fabricRef.current.backgroundColor = '#ffffff';
+        // Prevent recursive updates
+        isLoadingTemplate.current = true;
+        isHistoryProcessing.current = true; // Lock history during load
 
-        // Get template's original size and target size
-        const templateWidth = template.labelSize?.width || 50;
-        const templateHeight = template.labelSize?.height || 30;
-        const targetWidth = template.labelSize?.width || widthMm;
-        const targetHeight = template.labelSize?.height || heightMm;
+        try {
+            // Update persistent template reference
+            setCurrentTemplate(template);
 
-        // Update label size if template specifies
-        if (template.labelSize && onLabelSizeChange) {
-            onLabelSizeChange(template.labelSize.width, template.labelSize.height);
-        }
-
-        // Calculate scale factors based on mm to pixels conversion
-        // Templates are designed in pixels at ~8px per mm (203 DPI / 25.4)
-        const originalWidthPx = mmToPixels(templateWidth);
-        const originalHeightPx = mmToPixels(templateHeight);
-        const targetWidthPx = mmToPixels(targetWidth);
-        const targetHeightPx = mmToPixels(targetHeight);
-
-        // Scale factor to fit template to target size
-        const scaleX = targetWidthPx / Math.max(originalWidthPx, 160); // 160px was base design width
-        const scaleY = targetHeightPx / Math.max(originalHeightPx, 90); // 90px was base design height
-        const scale = Math.min(scaleX, scaleY, 1.5); // Cap max scale at 1.5x
-
-        // Use mmToPixels directly since template coords are in "design units"
-        // Design assumes roughly 8px per mm, so we convert to actual 203 DPI
-        const pxPerMm = mmToPixels(1); // ~8px per mm at 203 DPI
-
-        // Add template objects with scaling
-        for (const obj of template.objects || []) {
-            // Scale position and size - template uses px-like units, scale to actual canvas
-            const scaledLeft = (obj.left || 0) * scale;
-            const scaledTop = (obj.top || 0) * scale;
-
-            if (obj.type === 'text') {
-                const text = new IText(obj.text || 'Text', {
-                    left: scaledLeft,
-                    top: scaledTop,
-                    fontSize: Math.max(6, (obj.fontSize || 14) * scale),
-                    fontFamily: obj.fontFamily || 'Arial',
-                    fontWeight: obj.fontWeight || 'normal',
-                    fontStyle: obj.fontStyle || 'normal',
-                    textAlign: obj.textAlign || 'left',
-                    fill: '#000000',
-                    angle: obj.angle || 0,
-                });
-                fabricRef.current.add(text);
-            } else if (obj.type === 'rect') {
-                const rect = new Rect({
-                    left: scaledLeft,
-                    top: scaledTop,
-                    width: (obj.width || 80) * scale,
-                    height: (obj.height || 50) * scale,
-                    fill: obj.fill || 'transparent',
-                    stroke: obj.stroke || '#000000',
-                    strokeWidth: Math.max(1, (obj.strokeWidth || 2) * scale),
-                });
-                fabricRef.current.add(rect);
-            } else if (obj.type === 'barcode' || obj.type === 'qrcode') {
-                try {
-                    const tempCanvas = document.createElement('canvas');
-                    bwipjs.toCanvas(tempCanvas, {
-                        bcid: obj.type === 'qrcode' ? 'qrcode' : (obj.format || 'code128'),
-                        text: obj.value || '123456',
-                        scale: obj.type === 'qrcode' ? 3 : 2,
-                        height: obj.type === 'qrcode' ? undefined : 10,
-                        includetext: obj.type !== 'qrcode',
-                        textxalign: 'center',
-                    });
-                    const img = await FabricImage.fromURL(tempCanvas.toDataURL());
-                    img.set({ left: scaledLeft, top: scaledTop });
-                    img.scale(scale);
-                    fabricRef.current.add(img);
-                } catch (err) {
-                    console.error('Barcode generation error:', err);
+            // Update label size if provided (from TemplatePicker)
+            // Only return if size ACTUALLY changes, otherwise fallback to immediate render
+            if (targetSize && onLabelSizeChange) {
+                if (targetSize.width !== widthMm || targetSize.height !== heightMm) {
+                    onLabelSizeChange(targetSize.width, targetSize.height);
+                    // Wait for effect to trigger
+                    // Note: Effect will handle cleanup via isLoadingTemplate check/reset, 
+                    // but we must release local lock if effect DOESN'T run essentially.
+                    // Actually, if we return, we expect effect to re-trigger load.
+                    // But we must release history lock? No, effect will call load again.
+                    // But wait, if we return here, we exit the function.
+                    // isLoadingTemplate stays true.
+                    // Effect (line 765) sees currentTemplate set?
+                    // Line 765: if (currentTemplate && !isLoadingTemplate.current)
+                    // If we leave it true, effect WON'T run.
+                    // So we must set it false?
+                    // The original code set it false (lines 787).
+                    // So we must set it false here too.
+                    isLoadingTemplate.current = false;
+                    isHistoryProcessing.current = false;
+                    return;
                 }
-            } else if (obj.type === 'line') {
-                const line = new Line([
-                    (obj.x1 || 0) * scale,
-                    (obj.y1 || 0) * scale,
-                    (obj.x2 || 100) * scale,
-                    (obj.y2 || 0) * scale
-                ], {
-                    left: scaledLeft,
-                    top: scaledTop,
-                    stroke: obj.stroke || '#000000',
-                    strokeWidth: Math.max(1, (obj.strokeWidth || 2) * scale),
-                });
-                fabricRef.current.add(line);
             }
-        }
 
-        fabricRef.current.renderAll();
-    }, [onLabelSizeChange, widthMm, heightMm]);
+            // Clear existing objects
+            fabricRef.current.clear();
+            fabricRef.current.backgroundColor = '#ffffff';
+
+            // Get template's original design size (in pixels at 203 DPI)
+            const templateWidthMm = template.labelSize?.width || 50;
+            const templateHeightMm = template.labelSize?.height || 30;
+            const templateWidthPx = mmToPixels(templateWidthMm);
+            const templateHeightPx = mmToPixels(templateHeightMm);
+
+            // Get current canvas size (user's selected label size)
+            const canvasWidthPx = mmToPixels(widthMm);
+            const canvasHeightPx = mmToPixels(heightMm);
+
+            // Calculate scale factors to fit template content to current label
+            // Scale proportionally to maintain aspect ratio, fitting within bounds
+            const scaleX = canvasWidthPx / templateWidthPx;
+            const scaleY = canvasHeightPx / templateHeightPx;
+
+            // Use independent scaling for positions/layout to fill the label
+            // Use uniform scaling for text/content to prevent distortion
+            const contentScale = Math.min(scaleX, scaleY);
+
+            // Add template objects with scaling
+            for (const obj of template.objects || []) {
+                // Scale position - stretch to fill
+                const scaledLeft = (obj.left || 0) * scaleX;
+                const scaledTop = (obj.top || 0) * scaleY;
+
+                if (obj.type === 'text') {
+                    const text = new IText(obj.text || 'Text', {
+                        left: scaledLeft,
+                        top: scaledTop,
+                        fontSize: Math.max(6, (obj.fontSize || 14) * contentScale),
+                        fontFamily: obj.fontFamily || 'Arial',
+                        fontWeight: obj.fontWeight || 'normal',
+                        fontStyle: obj.fontStyle || 'normal',
+                        textAlign: obj.textAlign || 'left',
+                        fill: obj.fill || '#000000',
+                        angle: obj.angle || 0,
+                        originX: obj.originX || 'left',
+                        originY: obj.originY || 'top',
+                    });
+                    fabricRef.current.add(text);
+                } else if (obj.type === 'rect') {
+                    const rect = new Rect({
+                        left: scaledLeft,
+                        top: scaledTop,
+                        width: (obj.width || 80) * scaleX,
+                        height: (obj.height || 50) * scaleY,
+                        fill: obj.fill || 'transparent',
+                        stroke: obj.stroke || '#000000',
+                        strokeWidth: Math.max(1, (obj.strokeWidth || 2) * contentScale),
+                    });
+                    fabricRef.current.add(rect);
+                } else if (obj.type === 'barcode' || obj.type === 'qrcode') {
+                    try {
+                        const tempCanvas = document.createElement('canvas');
+                        bwipjs.toCanvas(tempCanvas, {
+                            bcid: obj.type === 'qrcode' ? 'qrcode' : (obj.format || 'code128'),
+                            text: obj.value || '123456',
+                            scale: obj.type === 'qrcode' ? 3 : 2,
+                            height: obj.type === 'qrcode' ? undefined : 10,
+                            includetext: obj.type !== 'qrcode',
+                            textxalign: 'center',
+                        });
+                        const img = await FabricImage.fromURL(tempCanvas.toDataURL());
+                        img.set({ left: scaledLeft, top: scaledTop });
+                        img.scale(contentScale);
+                        fabricRef.current.add(img);
+                    } catch (err) {
+                        console.error('Barcode generation error:', err);
+                    }
+                } else if (obj.type === 'line') {
+                    const line = new Line([
+                        (obj.x1 || 0) * scaleX,
+                        (obj.y1 || 0) * scaleY,
+                        (obj.x2 || 100) * scaleX,
+                        (obj.y2 || 0) * scaleY
+                    ], {
+                        left: scaledLeft,
+                        top: scaledTop,
+                        stroke: obj.stroke || '#000000',
+                        strokeWidth: Math.max(1, (obj.strokeWidth || 2) * contentScale),
+                    });
+                    fabricRef.current.add(line);
+                }
+            }
+
+            fabricRef.current.renderAll();
+        } finally {
+            isLoadingTemplate.current = false;
+            isHistoryProcessing.current = false;
+            saveHistory(); // Save template state
+        }
+    }, [widthMm, heightMm, onLabelSizeChange, saveHistory]);
 
     // Keyboard shortcuts
     useEffect(() => {
@@ -547,14 +945,26 @@ export function LabelDesigner({
                 e.preventDefault();
                 handleSelectAll();
             }
+
+            // Undo (Ctrl+Z)
+            if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+                e.preventDefault();
+                handleUndo();
+            }
+
+            // Redo (Ctrl+Y or Ctrl+Shift+Z)
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+                e.preventDefault();
+                handleRedo();
+            }
         };
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [handleDelete, handleZoomIn, handleZoomOut, handleZoomReset, handleSelectAll]);
+    }, [handleDelete, handleZoomIn, handleZoomOut, handleZoomReset, handleSelectAll, setInteractionMode]);
 
     return (
-        <div className="flex-1 flex overflow-hidden">
+        <div className="flex-1 flex overflow-hidden relative">
             {/* Left Toolbar */}
             <div className="p-3">
                 <Toolbar
@@ -570,59 +980,23 @@ export function LabelDesigner({
                 />
             </div>
 
-            {/* Canvas Area */}
-            <div ref={canvasWrapperRef} className="canvas-wrapper flex-1 overflow-auto">
-                <div className="relative inline-block" style={{ minWidth: 'fit-content' }}>
+            {/* Canvas Area - Infinite Workspace */}
+            <div ref={canvasWrapperRef} className="canvas-wrapper flex-1 overflow-hidden flex items-center justify-center bg-gray-900">
+                <div
+                    className="relative inline-block transition-transform duration-75 ease-out will-change-transform"
+                    style={{ minWidth: 'fit-content' }}
+                >
                     {/* Size and zoom indicator */}
                     <div className="absolute -top-6 left-0 text-xs text-gray-400 flex items-center gap-4">
                         <span>{widthMm}mm × {heightMm}mm ({widthPx}px × {heightPx}px @ 203 DPI)</span>
                         <span className="text-highlight">{Math.round(zoom * 100)}%</span>
                     </div>
 
-                    {/* Zoom controls */}
-                    <div className="absolute -top-6 right-0 flex items-center gap-1">
-                        <button
-                            onClick={handleZoomOut}
-                            disabled={zoom <= ZOOM_MIN}
-                            className="p-1 hover:bg-gray-700 rounded disabled:opacity-30 disabled:cursor-not-allowed"
-                            title="Zoom out (Ctrl+-)"
-                        >
-                            <ZoomOut size={14} />
-                        </button>
-                        <button
-                            onClick={handleZoomReset}
-                            className="px-2 py-0.5 hover:bg-gray-700 rounded text-xs min-w-[3rem]"
-                            title="Reset zoom (Ctrl+0)"
-                        >
-                            {Math.round(zoom * 100)}%
-                        </button>
-                        <button
-                            onClick={handleZoomIn}
-                            disabled={zoom >= ZOOM_MAX}
-                            className="p-1 hover:bg-gray-700 rounded disabled:opacity-30 disabled:cursor-not-allowed"
-                            title="Zoom in (Ctrl++)"
-                        >
-                            <ZoomIn size={14} />
-                        </button>
-                        <button
-                            onClick={handleZoomReset}
-                            className="p-1 hover:bg-gray-700 rounded ml-1"
-                            title="Fit to view (Ctrl+0)"
-                        >
-                            <Maximize2 size={14} />
-                        </button>
-                    </div>
 
                     {/* Canvas container with zoom transform */}
                     <div
                         ref={containerRef}
-                        className="canvas-container"
-                        style={{
-                            width: widthPx,
-                            height: heightPx,
-                            transform: `scale(${zoom})`,
-                            transformOrigin: 'top left',
-                        }}
+                        className="canvas-container relative"
                     />
                 </div>
             </div>
@@ -657,6 +1031,119 @@ export function LabelDesigner({
                 labelWidth={widthMm}
                 labelHeight={heightMm}
             />
+
+            {/* Stitch-style Floating Controls */}
+
+            {/* Bottom Left: Status & Background */}
+            <div className="absolute bottom-6 left-20 flex items-center gap-3 bg-gray-900/90 text-white px-4 py-2 rounded-full shadow-lg backdrop-blur-sm z-50">
+                {/* Zoom Indicator */}
+                <div className="text-sm font-medium border-r border-gray-700 pr-3 mr-1">
+                    {Math.round(zoom * 100)}%
+                </div>
+
+                {/* Background Color Picker */}
+                <div className="flex items-center gap-2">
+                    <div
+                        className="w-4 h-4 rounded-full border border-gray-500 cursor-pointer"
+                        style={{ backgroundColor: backgroundColor }}
+                        onClick={() => document.getElementById('bg-color-picker').click()}
+                    />
+                    <input
+                        id="bg-color-picker"
+                        type="color"
+                        value={backgroundColor}
+                        onChange={(e) => setBackgroundColor(e.target.value)}
+                        className="w-0 h-0 opacity-0 absolute"
+                    />
+                </div>
+            </div>
+
+            {/* Bottom Center: Tools */}
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-gray-900/90 text-white px-2 py-1.5 rounded-full shadow-lg backdrop-blur-sm z-50">
+                {/* Undo */}
+                <button
+                    onClick={handleUndo}
+                    disabled={historyStep <= 0}
+                    className="p-2 rounded-full hover:bg-gray-700 text-gray-400 disabled:opacity-30 disabled:cursor-not-allowed"
+                    title="Undo (Ctrl+Z)"
+                >
+                    <Undo size={20} />
+                </button>
+
+                {/* Redo */}
+                <button
+                    onClick={handleRedo}
+                    disabled={historyStep >= history.length - 1}
+                    className="p-2 rounded-full hover:bg-gray-700 text-gray-400 disabled:opacity-30 disabled:cursor-not-allowed"
+                    title="Redo (Ctrl+Y)"
+                >
+                    <Redo size={20} />
+                </button>
+
+                <div className="w-px h-6 bg-gray-700 mx-1"></div>
+
+                {/* Select Tool */}
+                <button
+                    onClick={() => setInteractionMode('select')}
+                    className={`p-2 rounded-full transition-colors ${interactionMode === 'select' ? 'bg-indigo-600 text-white' : 'hover:bg-gray-700 text-gray-400'}`}
+                    title="Select (V)"
+                >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z" /><path d="M13 13l6 6" /></svg>
+                </button>
+
+                {/* Pan Tool */}
+                <button
+                    onClick={() => setInteractionMode('pan')}
+                    className={`p-2 rounded-full transition-colors ${interactionMode === 'pan' ? 'bg-indigo-600 text-white' : 'hover:bg-gray-700 text-gray-400'}`}
+                    title="Pan (H)"
+                >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0" /><path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2" /><path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8" /><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" /></svg>
+                </button>
+
+                <div className="w-px h-6 bg-gray-700 mx-1"></div>
+
+                {/* Zoom Out */}
+                <button
+                    onClick={handleZoomOut}
+                    disabled={zoom <= ZOOM_MIN}
+                    className="p-2 rounded-full hover:bg-gray-700 text-gray-400 disabled:opacity-30 disabled:cursor-not-allowed"
+                    title="Zoom Out"
+                >
+                    <ZoomOut size={20} />
+                </button>
+
+                {/* Zoom In */}
+                <button
+                    onClick={handleZoomIn}
+                    disabled={zoom >= ZOOM_MAX}
+                    className="p-2 rounded-full hover:bg-gray-700 text-gray-400 disabled:opacity-30 disabled:cursor-not-allowed"
+                    title="Zoom In"
+                >
+                    <ZoomIn size={20} />
+                </button>
+
+                <div className="w-px h-6 bg-gray-700 mx-1"></div>
+
+                {/* Snap Toggle */}
+                <button
+                    onClick={() => setSnapEnabled(!snapEnabled)}
+                    className={`p-2 rounded-full transition-colors ${snapEnabled ? 'bg-indigo-600 text-white' : 'hover:bg-gray-700 text-gray-400'}`}
+                    title={snapEnabled ? "Disable Snap to Edge" : "Enable Snap to Edge"}
+                >
+                    <Magnet size={20} />
+                </button>
+
+                <div className="w-px h-6 bg-gray-700 mx-1"></div>
+
+                {/* Add Image */}
+                <button
+                    onClick={handleAddImage}
+                    className="p-2 rounded-full hover:bg-gray-700 text-gray-400"
+                    title="Add Image"
+                >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
+                </button>
+            </div>
         </div>
     );
 }

@@ -142,8 +142,23 @@ function App() {
     const fabricCanvas = fabricCanvasRef.current;
     if (!fabricCanvas) return;
 
+    // Save current zoom state
+    const currentZoom = fabricCanvas.getZoom();
+
     // Deselect objects before printing to hide selection UI
     fabricCanvas.discardActiveObject();
+
+    // Reset to 1:1 scale for printing (203 DPI)
+    // We must ensure the canvas is at the correct pixel dimensions for the printer
+    const { mmToPixels } = await import('./utils/utils');
+    const targetWidth = mmToPixels(labelWidth);
+    const targetHeight = mmToPixels(labelHeight);
+
+    fabricCanvas.setDimensions({
+      width: targetWidth,
+      height: targetHeight
+    });
+    fabricCanvas.setZoom(1);
     fabricCanvas.renderAll();
 
     // Get the canvas element
@@ -154,6 +169,14 @@ function App() {
       direction: 'left',
       quantity: 1,
     });
+
+    // Restore zoom state layout
+    fabricCanvas.setDimensions({
+      width: targetWidth * currentZoom,
+      height: targetHeight * currentZoom
+    });
+    fabricCanvas.setZoom(currentZoom);
+    fabricCanvas.renderAll();
 
     if (success) {
       // Could show success notification here

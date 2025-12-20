@@ -242,15 +242,20 @@ export function TopBar({
                     </button>
 
                     {/* Auto-save toggle */}
-                    <label className="flex items-center gap-2 text-sm text-gray-400 cursor-pointer ml-2">
-                        <input
-                            type="checkbox"
-                            checked={autoSaveBeforePrint}
-                            onChange={(e) => onAutoSaveChange(e.target.checked)}
-                            className="w-4 h-4 rounded"
-                        />
-                        Auto-save
-                    </label>
+                    <div className="flex items-center gap-3">
+                        <span className="text-sm font-medium text-gray-300">Auto-save</span>
+                        <button
+                            onClick={() => onAutoSaveChange(!autoSaveBeforePrint)}
+                            className={`relative w-11 h-6 rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-highlight bg-gray-700 ${autoSaveBeforePrint ? 'bg-purple-600' : 'bg-gray-600'
+                                }`}
+                            title="Toggle Auto-save"
+                        >
+                            <span
+                                className={`absolute left-0.5 top-0.5 inline-block w-5 h-5 transform bg-white rounded-full shadow transition-transform duration-200 ease-in-out ${autoSaveBeforePrint ? 'translate-x-5' : 'translate-x-0'
+                                    }`}
+                            />
+                        </button>
+                    </div>
 
                     {/* Settings Button */}
                     <button

@@ -137,6 +137,15 @@ export function PropertiesPanel({
             {(objectType === 'i-text' || objectType === 'textbox' || objectType === 'text' || objectType === 'IText') && (
                 <div className="space-y-3">
                     <div>
+                        <label className="text-xs text-gray-400 block mb-1">Text Content</label>
+                        <textarea
+                            value={selectedObject.text || ''}
+                            onChange={(e) => onUpdateProperty('text', e.target.value)}
+                            className="w-full h-20 bg-gray-700 border border-gray-600 rounded p-2 text-sm text-white resize-none focus:outline-none focus:border-highlight"
+                            placeholder="Enter text..."
+                        />
+                    </div>
+                    <div>
                         <label className="text-xs text-gray-400 block mb-1">Font Size</label>
                         <select
                             value={Math.round(selectedObject.fontSize || 24)}

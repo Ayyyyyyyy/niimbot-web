@@ -12,6 +12,7 @@ A powerful web-based label designer and printer interface for Niimbot thermal pr
 - **Shapes** - Add rectangles, circles, and lines
 - **Images** - Import custom images and scale them to fit
 - **Object manipulation** - Rotate, flip, duplicate, and layer objects
+- **Smart Snap Guides** - Align objects to canvas edges and other objects with visual guides
 
 ### 🤖 AI Label Assistant
 - **Natural language label creation** - Describe what you want and AI generates the label
@@ -28,6 +29,8 @@ A powerful web-based label designer and printer interface for Niimbot thermal pr
   - `Ctrl + -` - Zoom out
   - `Ctrl + 0` - Reset zoom to 100%
   - `Ctrl + Scroll` - Mouse wheel zoom
+  - `Ctrl + Z` - Undo
+  - `Ctrl + Y` / `Ctrl + Shift + Z` - Redo
   - `Delete` / `Backspace` - Delete selected object
   - `Escape` - Deselect all
 

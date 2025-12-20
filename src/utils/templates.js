@@ -72,9 +72,9 @@ function generatePeptideTemplates() {
                 subcategory: peptide.category,
                 labelSize: { width: 40, height: 20 },
                 objects: [
-                    { type: 'text', text: peptide.name, left: 20, top: 8, fontSize: 12, fontWeight: 'bold', textAlign: 'center' },
-                    { type: 'text', text: dosage, left: 20, top: 28, fontSize: 16, fontWeight: 'bold', textAlign: 'center' },
-                    { type: 'text', text: '___', left: 70, top: 32, fontSize: 8, textAlign: 'right' }, // Vendor placeholder
+                    { type: 'text', text: peptide.name, left: 20, top: 10, fontSize: 12, fontWeight: 'bold', textAlign: 'center', originX: 'center', originY: 'center' },
+                    { type: 'text', text: dosage, left: 20, top: 26, fontSize: 16, fontWeight: 'bold', textAlign: 'center', originX: 'center', originY: 'center' },
+                    { type: 'text', text: '___', left: 70, top: 32, fontSize: 8, textAlign: 'right', originX: 'right' }, // Vendor placeholder
                 ],
             });
         }
@@ -128,9 +128,9 @@ export const LABEL_TEMPLATES = [
         category: 'Events',
         labelSize: { width: 50, height: 30 },
         objects: [
-            { type: 'text', text: 'HELLO', left: 50, top: 5, fontSize: 10, textAlign: 'center' },
-            { type: 'text', text: 'my name is', left: 50, top: 15, fontSize: 8, textAlign: 'center' },
-            { type: 'text', text: 'Your Name', left: 50, top: 35, fontSize: 16, fontWeight: 'bold', textAlign: 'center' },
+            { type: 'text', text: 'HELLO', left: 50, top: 10, fontSize: 10, textAlign: 'center', originX: 'center', originY: 'center' },
+            { type: 'text', text: 'my name is', left: 50, top: 20, fontSize: 8, textAlign: 'center', originX: 'center', originY: 'center' },
+            { type: 'text', text: 'Your Name', left: 50, top: 45, fontSize: 16, fontWeight: 'bold', textAlign: 'center', originX: 'center', originY: 'center' },
         ],
     },
     {
@@ -141,7 +141,7 @@ export const LABEL_TEMPLATES = [
         labelSize: { width: 30, height: 30 },
         objects: [
             { type: 'qrcode', value: 'https://example.com', left: 15, top: 5 },
-            { type: 'text', text: 'Scan Me', left: 15, top: 75, fontSize: 10, textAlign: 'center' },
+            { type: 'text', text: 'Scan Me', left: 15, top: 75, fontSize: 10, textAlign: 'center', originX: 'center' },
         ],
     },
     {
@@ -164,8 +164,8 @@ export const LABEL_TEMPLATES = [
         category: 'Lab',
         labelSize: { width: 25, height: 15 },
         objects: [
-            { type: 'text', text: 'Compound', left: 12, top: 5, fontSize: 8, fontWeight: 'bold', textAlign: 'center' },
-            { type: 'text', text: '10mg', left: 12, top: 18, fontSize: 10, fontWeight: 'bold', textAlign: 'center' },
+            { type: 'text', text: 'Compound', left: 12, top: 7, fontSize: 8, fontWeight: 'bold', textAlign: 'center', originX: 'center', originY: 'center' },
+            { type: 'text', text: '10mg', left: 12, top: 22, fontSize: 10, fontWeight: 'bold', textAlign: 'center', originX: 'center', originY: 'center' },
         ],
     },
     {
@@ -175,14 +175,15 @@ export const LABEL_TEMPLATES = [
         category: 'Lab',
         labelSize: { width: 40, height: 20 },
         objects: [
-            { type: 'text', text: 'Compound Name', left: 20, top: 5, fontSize: 10, fontWeight: 'bold', textAlign: 'center' },
-            { type: 'text', text: '10mg', left: 20, top: 22, fontSize: 14, fontWeight: 'bold', textAlign: 'center' },
-            { type: 'text', text: 'VND', left: 70, top: 32, fontSize: 6, textAlign: 'right' },
+            { type: 'text', text: 'Compound Name', left: 20, top: 10, fontSize: 10, fontWeight: 'bold', textAlign: 'center', originX: 'center', originY: 'center' },
+            { type: 'text', text: '10mg', left: 20, top: 25, fontSize: 14, fontWeight: 'bold', textAlign: 'center', originX: 'center', originY: 'center' },
+            { type: 'text', text: 'VND', left: 70, top: 32, fontSize: 6, textAlign: 'right', originX: 'right' },
         ],
     },
 
-    // Medical Templates - Professional layouts based on PeptiPrints style
-    // Note: 50mm = 400px, 15mm = 120px, 30mm = 240px at 203 DPI (~8px/mm)
+    // Medical Templates - Professional layouts
+    // Canvas at 203 DPI: 50mm=400px, 15mm=120px, 30mm=240px
+    // Coordinates are in pixels matching the canvas size
 
     {
         id: 'peptide-pro-50x30',
@@ -192,33 +193,32 @@ export const LABEL_TEMPLATES = [
         labelSize: { width: 50, height: 30 },
         objects: [
             // Black header bar with compound name
-            { type: 'rect', left: 0, top: 0, width: 400, height: 45, fill: '#000000', stroke: 'transparent' },
-            { type: 'text', text: 'COMPOUND NAME', left: 200, top: 5, fontSize: 28, fontWeight: 'bold', textAlign: 'center', fill: '#ffffff' },
+            { type: 'rect', left: 0, top: 0, width: 400, height: 40, fill: '#000000', stroke: 'transparent' },
+            { type: 'text', text: 'COMPOUND NAME', left: 200, top: 20, fontSize: 20, fontWeight: 'bold', textAlign: 'center', originX: 'center', originY: 'center', fill: 'white' },
 
             // Dosage box with border (left side)
-            { type: 'rect', left: 10, top: 55, width: 100, height: 50, stroke: '#cc0000', strokeWidth: 3, fill: 'transparent' },
-            { type: 'text', text: '10 mg', left: 60, top: 60, fontSize: 24, fontWeight: 'bold', textAlign: 'center' },
+            { type: 'rect', left: 15, top: 50, width: 90, height: 50, stroke: '#cc0000', strokeWidth: 2, fill: 'transparent' },
+            { type: 'text', text: '10 mg', left: 60, top: 75, fontSize: 18, fontWeight: 'bold', textAlign: 'center', originX: 'center', originY: 'center' },
 
             // Lot number below dosage
-            { type: 'rect', left: 10, top: 115, width: 100, height: 30, stroke: '#000000', strokeWidth: 1, fill: 'transparent' },
-            { type: 'text', text: 'LOT123456', left: 60, top: 118, fontSize: 12, textAlign: 'center' },
+            { type: 'text', text: 'LOT123456', left: 60, top: 110, fontSize: 10, textAlign: 'center', originX: 'center', originY: 'center' },
 
             // QR code area (center)
-            { type: 'qrcode', value: 'https://example.com/verify', left: 155, top: 60 },
+            { type: 'qrcode', value: 'https://example.com/verify', left: 150, top: 50, originX: 'left' },
 
-            // "For Research use only" - vertical text indicator
-            { type: 'text', text: 'Research Only', left: 130, top: 70, fontSize: 8, angle: -90 },
+            // "For Research use only"
+            { type: 'text', text: 'Research Only', left: 200, top: 140, fontSize: 10, textAlign: 'center', originX: 'center', originY: 'center' },
 
-            // Expiry date box (right side) - vertical
-            { type: 'rect', left: 340, top: 55, width: 50, height: 90, stroke: '#cc0000', strokeWidth: 3, fill: 'transparent' },
-            { type: 'text', text: 'DEC', left: 365, top: 65, fontSize: 14, fontWeight: 'bold', textAlign: 'center' },
-            { type: 'text', text: '2025', left: 365, top: 100, fontSize: 14, fontWeight: 'bold', textAlign: 'center' },
+            // Expiry date box (right side)
+            { type: 'rect', left: 300, top: 50, width: 85, height: 70, stroke: '#cc0000', strokeWidth: 2, fill: 'transparent' },
+            { type: 'text', text: 'EXP', left: 342, top: 65, fontSize: 12, textAlign: 'center', originX: 'center', originY: 'center' },
+            { type: 'text', text: '12/25', left: 342, top: 90, fontSize: 16, fontWeight: 'bold', textAlign: 'center', originX: 'center', originY: 'center' },
 
             // Bottom row - reconstitution info
-            { type: 'text', text: '2mL BAC | 10u = 0.5mg', left: 200, top: 155, fontSize: 12, textAlign: 'center' },
+            { type: 'text', text: '2mL BAC | 10u = 0.5mg', left: 200, top: 165, fontSize: 12, textAlign: 'center', originX: 'center', originY: 'center' },
 
             // Vendor code
-            { type: 'text', text: 'VND', left: 380, top: 155, fontSize: 10, textAlign: 'right' },
+            { type: 'text', text: 'VND', left: 380, top: 220, fontSize: 10, textAlign: 'right', originX: 'right', originY: 'center' },
         ],
     },
     {
@@ -229,26 +229,24 @@ export const LABEL_TEMPLATES = [
         labelSize: { width: 50, height: 15 },
         objects: [
             // Black header bar with compound name
-            { type: 'rect', left: 0, top: 0, width: 400, height: 30, fill: '#000000', stroke: 'transparent' },
-            { type: 'text', text: 'COMPOUND', left: 200, top: 2, fontSize: 20, fontWeight: 'bold', textAlign: 'center', fill: '#ffffff' },
+            { type: 'rect', left: 0, top: 0, width: 400, height: 28, fill: '#000000', stroke: 'transparent' },
+            { type: 'text', text: 'COMPOUND', left: 200, top: 14, fontSize: 16, fontWeight: 'bold', textAlign: 'center', originX: 'center', originY: 'center', fill: 'white' },
 
             // Dosage box with red border (left)
-            { type: 'rect', left: 8, top: 38, width: 70, height: 35, stroke: '#cc0000', strokeWidth: 2, fill: 'transparent' },
-            { type: 'text', text: '10 mg', left: 43, top: 42, fontSize: 18, fontWeight: 'bold', textAlign: 'center' },
+            { type: 'rect', left: 10, top: 35, width: 70, height: 35, stroke: '#cc0000', strokeWidth: 2, fill: 'transparent' },
+            { type: 'text', text: '10 mg', left: 45, top: 52, fontSize: 14, fontWeight: 'bold', textAlign: 'center', originX: 'center', originY: 'center' },
 
             // Lot number (below dosage)
-            { type: 'text', text: 'LOT123456', left: 43, top: 80, fontSize: 8, textAlign: 'center' },
+            { type: 'text', text: 'LOT123456', left: 45, top: 75, fontSize: 8, textAlign: 'center', originX: 'center', originY: 'center' },
 
-            // QR code (center)
-            { type: 'qrcode', value: 'https://verify.example.com', left: 165, top: 35 },
+            // Center info
+            { type: 'text', text: '2mL BAC | 10u=0.5mg', left: 200, top: 52, fontSize: 10, textAlign: 'center', originX: 'center', originY: 'center' },
+            { type: 'text', text: 'Research Only', left: 200, top: 85, fontSize: 8, textAlign: 'center', originX: 'center', originY: 'center' },
 
             // Expiry box (right side)
-            { type: 'rect', left: 330, top: 38, width: 60, height: 55, stroke: '#cc0000', strokeWidth: 2, fill: 'transparent' },
-            { type: 'text', text: 'DEC', left: 360, top: 42, fontSize: 12, fontWeight: 'bold', textAlign: 'center' },
-            { type: 'text', text: '2025', left: 360, top: 62, fontSize: 12, fontWeight: 'bold', textAlign: 'center' },
-
-            // Dosing info (bottom)
-            { type: 'text', text: '2mL BAC | 10u=0.5mg', left: 200, top: 100, fontSize: 9, textAlign: 'center' },
+            { type: 'rect', left: 320, top: 35, width: 70, height: 50, stroke: '#cc0000', strokeWidth: 2, fill: 'transparent' },
+            { type: 'text', text: 'EXP', left: 355, top: 45, fontSize: 10, textAlign: 'center', originX: 'center', originY: 'center' },
+            { type: 'text', text: '12/25', left: 355, top: 68, fontSize: 14, fontWeight: 'bold', textAlign: 'center', originX: 'center', originY: 'center' },
         ],
     },
     {
@@ -259,24 +257,20 @@ export const LABEL_TEMPLATES = [
         labelSize: { width: 50, height: 15 },
         objects: [
             // Compound name - large bold
-            { type: 'text', text: 'RETATRUTIDE', left: 200, top: 5, fontSize: 24, fontWeight: 'bold', textAlign: 'center' },
+            { type: 'text', text: 'RETATRUTIDE', left: 200, top: 15, fontSize: 18, fontWeight: 'bold', textAlign: 'center', originX: 'center', originY: 'center' },
 
             // Divider line
-            { type: 'line', left: 20, top: 40, x1: 0, y1: 0, x2: 360, y2: 0, stroke: '#000000', strokeWidth: 1 },
+            { type: 'line', left: 20, top: 35, x1: 0, y1: 0, x2: 360, y2: 0, stroke: '#000000', strokeWidth: 1 },
 
-            // Info row: Dosage | Reconstitution | Date
-            { type: 'text', text: '10mg', left: 40, top: 50, fontSize: 16, fontWeight: 'bold' },
-            { type: 'text', text: '|', left: 100, top: 50, fontSize: 16 },
-            { type: 'text', text: '2mL BAC', left: 140, top: 50, fontSize: 14 },
-            { type: 'text', text: '|', left: 230, top: 50, fontSize: 16 },
-            { type: 'text', text: '10u = 0.5mg', left: 270, top: 50, fontSize: 14 },
+            // Info row: Dosage | Reconstitution
+            { type: 'text', text: '10mg | 2mL BAC | 10u = 0.5mg', left: 200, top: 50, fontSize: 12, textAlign: 'center', originX: 'center', originY: 'center' },
 
-            // Bottom row: Vendor and Date
-            { type: 'text', text: '__/__/__', left: 40, top: 85, fontSize: 12 },
-            { type: 'text', text: 'VND', left: 360, top: 85, fontSize: 12, textAlign: 'right' },
+            // Bottom row: Date and Vendor
+            { type: 'text', text: '__/__/__', left: 60, top: 85, fontSize: 10, originX: 'center', originY: 'center' },
+            { type: 'text', text: 'VND', left: 340, top: 85, fontSize: 10, textAlign: 'right', originX: 'right', originY: 'center' },
 
             // Divider line bottom
-            { type: 'line', left: 20, top: 110, x1: 0, y1: 0, x2: 360, y2: 0, stroke: '#000000', strokeWidth: 1 },
+            { type: 'line', left: 20, top: 100, x1: 0, y1: 0, x2: 360, y2: 0, stroke: '#000000', strokeWidth: 1 },
         ],
     },
     {
@@ -287,33 +281,29 @@ export const LABEL_TEMPLATES = [
         labelSize: { width: 50, height: 30 },
         objects: [
             // Black header bar
-            { type: 'rect', left: 0, top: 0, width: 400, height: 45, fill: '#000000', stroke: 'transparent' },
-            { type: 'text', text: 'COMPOUND NAME', left: 200, top: 5, fontSize: 26, fontWeight: 'bold', textAlign: 'center', fill: '#ffffff' },
+            { type: 'rect', left: 0, top: 0, width: 400, height: 40, fill: '#000000', stroke: 'transparent' },
+            { type: 'text', text: 'COMPOUND NAME', left: 200, top: 20, fontSize: 18, fontWeight: 'bold', textAlign: 'center', originX: 'center', originY: 'center', fill: 'white' },
 
-            // Dosage with border
-            { type: 'rect', left: 15, top: 55, width: 90, height: 45, stroke: '#000000', strokeWidth: 2, fill: 'transparent' },
-            { type: 'text', text: '10 mg', left: 60, top: 58, fontSize: 22, fontWeight: 'bold', textAlign: 'center' },
+            // Dosage with border (left)
+            { type: 'rect', left: 15, top: 50, width: 85, height: 45, stroke: '#000000', strokeWidth: 2, fill: 'transparent' },
+            { type: 'text', text: '10 mg', left: 57, top: 72, fontSize: 16, fontWeight: 'bold', textAlign: 'center', originX: 'center', originY: 'center' },
 
             // Lot number
-            { type: 'rect', left: 15, top: 110, width: 90, height: 25, stroke: '#000000', strokeWidth: 1, fill: 'transparent' },
-            { type: 'text', text: 'LOT12345', left: 60, top: 112, fontSize: 12, textAlign: 'center' },
+            { type: 'text', text: 'LOT12345', left: 57, top: 110, fontSize: 10, textAlign: 'center', originX: 'center', originY: 'center' },
 
-            // Atom symbol area (center) - using ⚛ unicode
-            { type: 'text', text: '⚛', left: 200, top: 55, fontSize: 60, textAlign: 'center' },
+            // Atom symbol area (center)
+            { type: 'text', text: '⚛', left: 200, top: 72, fontSize: 48, textAlign: 'center', originX: 'center', originY: 'center' },
 
             // Expiry box (right)
-            { type: 'rect', left: 300, top: 55, width: 85, height: 80, stroke: '#000000', strokeWidth: 2, fill: 'transparent' },
-            { type: 'text', text: 'EXP', left: 342, top: 60, fontSize: 12, textAlign: 'center' },
-            { type: 'text', text: '12/25', left: 342, top: 85, fontSize: 18, fontWeight: 'bold', textAlign: 'center' },
+            { type: 'rect', left: 300, top: 50, width: 85, height: 70, stroke: '#000000', strokeWidth: 2, fill: 'transparent' },
+            { type: 'text', text: 'EXP', left: 342, top: 65, fontSize: 12, textAlign: 'center', originX: 'center', originY: 'center' },
+            { type: 'text', text: '12/25', left: 342, top: 90, fontSize: 16, fontWeight: 'bold', textAlign: 'center', originX: 'center', originY: 'center' },
 
             // Reconstitution 
-            { type: 'text', text: '2mL BAC | 10u = 0.5mg', left: 200, top: 150, fontSize: 14, textAlign: 'center' },
-
-            // Vendor
-            { type: 'text', text: 'VENDOR', left: 380, top: 175, fontSize: 10, textAlign: 'right' },
+            { type: 'text', text: '2mL BAC | 10u = 0.5mg', left: 200, top: 145, fontSize: 12, textAlign: 'center', originX: 'center', originY: 'center' },
 
             // Research notice
-            { type: 'text', text: 'For Research Use Only', left: 200, top: 175, fontSize: 8, textAlign: 'center' },
+            { type: 'text', text: 'For Research Use Only', left: 200, top: 200, fontSize: 10, textAlign: 'center', originX: 'center', originY: 'center' },
         ],
     },
     {
@@ -324,39 +314,37 @@ export const LABEL_TEMPLATES = [
         labelSize: { width: 50, height: 30 },
         objects: [
             // Border - full label
-            { type: 'rect', left: 4, top: 4, width: 390, height: 230, stroke: '#000000', strokeWidth: 2 },
+            { type: 'rect', left: 5, top: 5, width: 390, height: 230, stroke: '#000000', strokeWidth: 2 },
 
             // Rx symbol
-            { type: 'text', text: '℞', left: 20, top: 8, fontSize: 36, fontWeight: 'bold' },
+            { type: 'text', text: '℞', left: 20, top: 12, fontSize: 28, fontWeight: 'bold' },
 
             // Drug name
-            { type: 'text', text: 'COMPOUND NAME', left: 80, top: 12, fontSize: 24, fontWeight: 'bold' },
+            { type: 'text', text: 'COMPOUND NAME', left: 70, top: 15, fontSize: 18, fontWeight: 'bold' },
 
             // Strength
-            { type: 'text', text: '10mg / vial', left: 80, top: 48, fontSize: 18 },
+            { type: 'text', text: '10mg / vial', left: 70, top: 45, fontSize: 14 },
 
             // Divider line
-            { type: 'line', left: 15, top: 80, x1: 0, y1: 0, x2: 368, y2: 0, stroke: '#000000', strokeWidth: 1 },
+            { type: 'line', left: 15, top: 75, x1: 0, y1: 0, x2: 370, y2: 0, stroke: '#000000', strokeWidth: 1 },
 
             // Instructions
-            { type: 'text', text: 'Reconstituted with 2mL BAC Water', left: 20, top: 88, fontSize: 14 },
-            { type: 'text', text: '10 units = 0.5mg', left: 20, top: 112, fontSize: 16, fontWeight: 'bold' },
+            { type: 'text', text: 'Reconstituted with 2mL BAC Water', left: 20, top: 85, fontSize: 12 },
+            { type: 'text', text: '10 units = 0.5mg', left: 20, top: 110, fontSize: 14, fontWeight: 'bold' },
 
             // Divider line
-            { type: 'line', left: 15, top: 145, x1: 0, y1: 0, x2: 368, y2: 0, stroke: '#000000', strokeWidth: 1 },
+            { type: 'line', left: 15, top: 140, x1: 0, y1: 0, x2: 370, y2: 0, stroke: '#000000', strokeWidth: 1 },
 
             // Date and lot
-            { type: 'text', text: 'Date: __/__/__', left: 20, top: 155, fontSize: 14 },
-            { type: 'text', text: 'Lot: ______', left: 200, top: 155, fontSize: 14 },
+            { type: 'text', text: 'Date: __/__/__', left: 20, top: 150, fontSize: 11 },
+            { type: 'text', text: 'Lot: ______', left: 200, top: 150, fontSize: 11 },
 
             // Expiry
-            { type: 'text', text: 'Exp: __/__/__', left: 20, top: 180, fontSize: 14 },
-
-            // Vendor
-            { type: 'text', text: 'Source: ___', left: 200, top: 180, fontSize: 14 },
+            { type: 'text', text: 'Exp: __/__/__', left: 20, top: 175, fontSize: 11 },
+            { type: 'text', text: 'Source: ___', left: 200, top: 175, fontSize: 11 },
 
             // Research notice
-            { type: 'text', text: 'FOR RESEARCH USE ONLY', left: 200, top: 210, fontSize: 10, textAlign: 'center' },
+            { type: 'text', text: 'FOR RESEARCH USE ONLY', left: 200, top: 210, fontSize: 10, textAlign: 'center', originX: 'center', originY: 'center' },
         ],
     },
     {
@@ -367,15 +355,15 @@ export const LABEL_TEMPLATES = [
         labelSize: { width: 50, height: 15 },
         objects: [
             // Compound name - top line
-            { type: 'text', text: 'RETATRUTIDE', left: 200, top: 5, fontSize: 22, fontWeight: 'bold', textAlign: 'center' },
+            { type: 'text', text: 'RETATRUTIDE', left: 200, top: 18, fontSize: 18, fontWeight: 'bold', textAlign: 'center', originX: 'center', originY: 'center' },
 
             // Dosage and reconstitution - middle line
-            { type: 'text', text: '10mg | 2mL BAC | 10u=0.5mg', left: 200, top: 40, fontSize: 14, textAlign: 'center' },
+            { type: 'text', text: '10mg | 2mL BAC | 10u=0.5mg', left: 200, top: 55, fontSize: 12, textAlign: 'center', originX: 'center', originY: 'center' },
 
             // Date, Lot, Vendor - bottom line
-            { type: 'text', text: '__/__/__', left: 50, top: 75, fontSize: 11 },
-            { type: 'text', text: 'LOT: ______', left: 180, top: 75, fontSize: 11 },
-            { type: 'text', text: '___', left: 350, top: 75, fontSize: 11 },
+            { type: 'text', text: '__/__/__', left: 50, top: 90, fontSize: 10, originX: 'center', originY: 'center' },
+            { type: 'text', text: 'LOT: ______', left: 200, top: 90, fontSize: 10, textAlign: 'center', originX: 'center', originY: 'center' },
+            { type: 'text', text: '___', left: 350, top: 90, fontSize: 10, originX: 'right', textAlign: 'right', originY: 'center' },
 
             // Bottom accent line
             { type: 'line', left: 10, top: 105, x1: 0, y1: 0, x2: 380, y2: 0, stroke: '#000000', strokeWidth: 2 },

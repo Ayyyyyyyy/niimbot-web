@@ -115,8 +115,8 @@ export function SettingsModal({ isOpen, onClose }) {
                                 <button
                                     onClick={() => updateField('provider', 'ollama')}
                                     className={`flex-1 p-3 rounded-lg border transition-all ${formData.provider === 'ollama'
-                                            ? 'bg-highlight border-highlight text-white'
-                                            : 'bg-gray-700 border-gray-600 hover:bg-gray-600'
+                                        ? 'bg-highlight border-highlight text-white'
+                                        : 'bg-gray-700 border-gray-600 hover:bg-gray-600'
                                         }`}
                                 >
                                     <Server size={20} className="mx-auto mb-1" />
@@ -126,8 +126,8 @@ export function SettingsModal({ isOpen, onClose }) {
                                 <button
                                     onClick={() => updateField('provider', 'gemini')}
                                     className={`flex-1 p-3 rounded-lg border transition-all ${formData.provider === 'gemini'
-                                            ? 'bg-highlight border-highlight text-white'
-                                            : 'bg-gray-700 border-gray-600 hover:bg-gray-600'
+                                        ? 'bg-highlight border-highlight text-white'
+                                        : 'bg-gray-700 border-gray-600 hover:bg-gray-600'
                                         }`}
                                 >
                                     <Sparkles size={20} className="mx-auto mb-1" />
@@ -275,8 +275,8 @@ export function SettingsModal({ isOpen, onClose }) {
                         <button
                             onClick={handleSave}
                             className={`px-6 py-2 rounded-lg font-medium flex items-center gap-2 transition-all ${isSaved
-                                    ? 'bg-green-600 text-white'
-                                    : 'bg-highlight hover:bg-highlight/80 text-white'
+                                ? 'bg-green-600 text-white'
+                                : 'bg-highlight hover:bg-highlight/80 text-white'
                                 }`}
                         >
                             {isSaved ? <Check size={18} /> : <Save size={18} />}
