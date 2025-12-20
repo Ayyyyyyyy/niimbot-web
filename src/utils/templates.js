@@ -67,14 +67,17 @@ function generatePeptideTemplates() {
             templates.push({
                 id: `peptide-${peptide.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${dosage}`,
                 name: `${peptide.name} ${dosage}`,
-                description: peptide.category,
+                description: `${peptide.category} (50x15)`,
                 category: 'Peptides',
                 subcategory: peptide.category,
-                labelSize: { width: 40, height: 20 },
+                labelSize: { width: 50, height: 15 },
                 objects: [
-                    { type: 'text', text: peptide.name, left: 20, top: 10, fontSize: 12, fontWeight: 'bold', textAlign: 'center', originX: 'center', originY: 'center' },
-                    { type: 'text', text: dosage, left: 20, top: 26, fontSize: 16, fontWeight: 'bold', textAlign: 'center', originX: 'center', originY: 'center' },
-                    { type: 'text', text: '___', left: 70, top: 32, fontSize: 8, textAlign: 'right', originX: 'right' }, // Vendor placeholder
+                    // Centered Name (X=200 for 50mm)
+                    { type: 'text', text: peptide.name, left: 200, top: 15, fontSize: 18, fontWeight: 'bold', textAlign: 'center', originX: 'center', originY: 'center' },
+                    // Centered Dosage
+                    { type: 'text', text: dosage, left: 200, top: 50, fontSize: 14, fontWeight: 'bold', textAlign: 'center', originX: 'center', originY: 'center' },
+                    // Vendor (Right aligned)
+                    { type: 'text', text: '___', left: 380, top: 50, fontSize: 10, textAlign: 'right', originX: 'right', originY: 'center' },
                 ],
             });
         }
@@ -367,6 +370,34 @@ export const LABEL_TEMPLATES = [
 
             // Bottom accent line
             { type: 'line', left: 10, top: 105, x1: 0, y1: 0, x2: 380, y2: 0, stroke: '#000000', strokeWidth: 2 },
+        ],
+    },
+    {
+        id: 'kitchen-date',
+        name: 'Kitchen Date (50×30)',
+        description: 'Food prep and expiry',
+        category: 'Home',
+        labelSize: { width: 50, height: 30 },
+        objects: [
+            { type: 'text', text: 'CONTENT', left: 200, top: 30, fontSize: 24, fontWeight: 'bold', textAlign: 'center', originX: 'center', originY: 'center' },
+            { type: 'line', left: 20, top: 60, x1: 0, y1: 0, x2: 360, y2: 0, stroke: '#000000', strokeWidth: 2 },
+            { type: 'text', text: 'Made: __/__', left: 20, top: 85, fontSize: 12, originX: 'left' },
+            { type: 'text', text: 'Use By: __/__', left: 200, top: 85, fontSize: 12, originX: 'left' },
+        ],
+    },
+    {
+        id: 'cable-wrap',
+        name: 'Cable Label (50×15)',
+        description: 'Wrap-around cable tag',
+        category: 'Home',
+        labelSize: { width: 50, height: 15 },
+        objects: [
+            // Left side (Front)
+            { type: 'text', text: 'DEVICE ID', left: 10, top: 25, fontSize: 12, fontWeight: 'bold', angle: 0 },
+            // Middle Divider (Fold line)
+            { type: 'line', left: 200, top: 0, x1: 0, y1: 0, x2: 0, y2: 120, stroke: '#999999', strokeWidth: 1, strokeDashArray: [5, 5] },
+            // Right side (Back/Duplicate)
+            { type: 'text', text: 'DEVICE ID', left: 390, top: 25, fontSize: 12, fontWeight: 'bold', textAlign: 'right', originX: 'right' },
         ],
     },
 

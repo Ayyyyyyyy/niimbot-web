@@ -57,9 +57,26 @@ function App() {
       }
 
       if (labelSpec && labelSpec.width && labelSpec.height) {
-        setLabelWidth(labelSpec.width);
-        setLabelHeight(labelSpec.height);
+        // Enforce Landscape orientation (Width >= Height)
+        // Most D110 labels print horizontally, so we normalize 15x50 -> 50x15
+        const w = Math.max(labelSpec.width, labelSpec.height);
+        const h = Math.min(labelSpec.width, labelSpec.height);
+
+        setLabelWidth(w);
+        setLabelHeight(h);
         setDetectedLabel(labelSpec);
+      } else if (rfidInfo.labelWidth && rfidInfo.labelHeight) {
+        // Fallback to raw RFID dimensions if no preset match
+        const rawW = parseInt(rfidInfo.labelWidth);
+        const rawH = parseInt(rfidInfo.labelHeight);
+
+        if (!isNaN(rawW) && !isNaN(rawH)) {
+          const w = Math.max(rawW, rawH);
+          const h = Math.min(rawW, rawH);
+          setLabelWidth(w);
+          setLabelHeight(h);
+        }
+        setDetectedLabel(null);
       } else {
         setDetectedLabel(null);
       }

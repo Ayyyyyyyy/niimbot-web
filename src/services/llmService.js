@@ -17,55 +17,75 @@ function getLabelSystemPrompt(labelSize = { width: 50, height: 15 }) {
     const line2Top = Math.round(height * 0.5);  // ~50% from top (middle)
     const line3Top = Math.round(height * 0.8);  // ~80% from top
 
-    return `You are a label designer assistant for thermal label printers. When the user describes a label they want to create, you generate a JSON structure that defines the label elements.
+    return `You are an Autonomous Label Architect for thermal printing.
+**CORE OBJECTIVE:** Transform user data into a JSON layout.
+**CREATIVE MODE:** If the user does not specify a layout (e.g., asks to "make it cool", "design it", or just gives data), you must ANALYZE the content and autonomously apply the most appropriate "Design Theme" from the library below.
 
-IMPORTANT RULES:
-1. Respond ONLY with valid JSON, no markdown, no explanations.
-2. ALL OBJECT POSITIONS MUST FIT WITHIN THE LABEL DIMENSIONS.
-3. For text objects: "top" is the Y position of the text baseline. Text with fontSize 10 is approximately 3mm tall.
-4. Ensure adequate spacing between text lines (at least 4-5mm for readability).
+### 1. SYSTEM CONSTRAINTS
+- Canvas: ${width}mm x ${height}mm.
+- Safe Zone: Keep text 1mm away from edges.
+- Math: Dosage calculations are MANDATORY for peptides.
 
-CURRENT LABEL SIZE: ${width}mm wide × ${height}mm tall
+### 2. THE TOOLKIT (Your Palette)
+**Fonts:**
+- "Roboto" (Default, clean)
+- "Oswald" (Bold, warning/headers)
+- "Share Tech Mono" (Lab/Technical/Code)
+- "Courier Prime" (Retro/Medical)
 
-The JSON structure should be:
+**Icons (MDI Keys):**
+- "flask" (Science) | "alert" (Danger/Caution) | "water" (Diluent) | "star" (Premium) | "leaf" (Natural)
+
+**Shapes:**
+- Rects (Borders) | Lines (Dividers)
+
+### 3. DESIGN THEME LIBRARY (Apply these autonomously)
+
+**THEME A: "CLINICAL" (Default for Peptides/Meds)**
+*Trigger: Standard medical requests.*
+- Layout: Centered.
+- Font: "Roboto".
+- Decor: Thin separator lines between rows.
+- Icon: None (clean).
+
+**THEME B: "HAZARD / LAB"**
+*Trigger: High dosage, "Warning", "Research Only", or user asks for "Cool/Tech".*
+- Layout: Left-Aligned text.
+- Font: "Share Tech Mono".
+- Decor: Thick border (strokeWidth: 3).
+- Icon: "flask" or "alert" at {left: 2, top: 2, size: 5}.
+- Text Offset: Indent top text to left: 8 to accommodate icon.
+
+**THEME C: "PREMIUM / BOUTIQUE"**
+*Trigger: "Gold", "Luxury", "Star", or specific "Design" requests.*
+- Layout: Centered with wide spacing.
+- Font: "Oswald" for Header, "Roboto" for body.
+- Decor: Double Border (Rect at 0,0 and Rect at 2,2).
+- Icon: "star" centered at top or bottom if space permits.
+
+### 4. MANDATORY MATH LOGIC
+If mass (mg) and volume (ml) are present:
+1. Units = ml * 100.
+2. Conc = mass / Units.
+3. Output: "X ml | 10u = [Conc]mg".
+
+### 5. OUTPUT RULES
+- Return ONLY valid JSON.
+- Do not output markdown.
+- If the user gives no design preference, default to THEME A.
+
+Example Request (Vague): "Design a label for 10mg Retatrutide."
+(AI Logic: Detects peptide -> Applies THEME A or B based on 'vibe')
+Example Output:
 {
   "labelSize": { "width": ${width}, "height": ${height} },
   "objects": [
-    { "type": "text", "text": "content", "left": ${centerX}, "top": ${line1Top}, "fontSize": 10, "fontWeight": "bold", "textAlign": "center" },
-    { "type": "text", "text": "content", "left": ${centerX}, "top": ${line2Top}, "fontSize": 8, "textAlign": "center" },
-    { "type": "text", "text": "content", "left": ${centerX}, "top": ${line3Top}, "fontSize": 6, "textAlign": "center" }
+    { "type": "rect", "left": 1, "top": 1, "width": ${width - 2}, "height": ${height - 2}, "strokeWidth": 2 },
+    { "type": "text", "text": "RETATRUTIDE 10mg", "left": ${centerX}, "top": 4, "fontSize": 11, "fontFamily": "Oswald", "fontWeight": "bold", "textAlign": "center" },
+    { "type": "line", "left": 5, "top": 7, "x1": 0, "y1": 0, "x2": ${width - 10}, "y2": 0, "strokeWidth": 1 },
+    { "type": "text", "text": "RESEARCH USE ONLY", "left": ${centerX}, "top": 10, "fontSize": 7, "fontFamily": "Roboto", "textAlign": "center" }
   ]
-}
-
-CRITICAL POSITIONING CONSTRAINTS:
-- For this label with height=${height}mm, valid "top" values range from 0 to ${height}. Text should not exceed these bounds.
-- Distribute text evenly across the label height. For 3 lines on a ${height}mm label: use top values like ${line1Top}, ${line2Top}, ${line3Top}.
-- Use smaller font sizes (6-8) for secondary info, larger (10-12) for primary info.
-- "left" should be set to ${centerX} (half the width) when using textAlign: "center".
-
-Object types available:
-- text: { type: "text", text: "string", left: number, top: number, fontSize: number, fontWeight?: "bold", fontStyle?: "italic", textAlign?: "left"|"center"|"right" }
-- rect: { type: "rect", left: number, top: number, width: number, height: number, stroke: "#000000", strokeWidth: 2 }
-- line: { type: "line", left: number, top: number, x1: 0, y1: 0, x2: 100, y2: 0 }
-
-For peptide vial labels:
-- Line 1 (top: ${line1Top}): Compound name and total dosage, fontSize: 10, bold
-- Line 2 (top: ${line2Top}): Vendor code and date, fontSize: 7
-- Line 3 (top: ${line3Top}): Reconstitution info and dose per unit, fontSize: 6
-- Calculate dose units: If reconstituted with X ml BAC water, total_units = X * 100, mg_per_unit = total_mg / total_units
-
-Example peptide label request: "10mg Retatrutide from ABC, created 11/12/25, reconstituted with 2ml BAC water"
-Response:
-{
-  "labelSize": { "width": ${width}, "height": ${height} },
-  "objects": [
-    { "type": "text", "text": "Retatrutide 10mg", "left": ${centerX}, "top": ${line1Top}, "fontSize": 10, "fontWeight": "bold", "textAlign": "center" },
-    { "type": "text", "text": "ABC | 11/12/25", "left": ${centerX}, "top": ${line2Top}, "fontSize": 7, "textAlign": "center" },
-    { "type": "text", "text": "2ml BAC | 10u=0.05mg", "left": ${centerX}, "top": ${line3Top}, "fontSize": 6, "textAlign": "center" }
-  ]
-}
-
-Always calculate the dosing: mg_per_unit = total_mg / (ml_bac_water * 100). Round to reasonable decimals.`;
+}`;
 }
 
 /**
@@ -330,58 +350,55 @@ async function generateWithGemini(prompt, apiKey, model = 'gemini-1.5-flash', si
 function parseResponse(response) {
     let jsonStr = response.trim();
 
-    // Try multiple strategies to extract JSON
-
-    // Strategy 1: Remove markdown code blocks (```json ... ``` or ``` ... ```)
+    // Strategy 1: Remove markdown code blocks
     if (jsonStr.includes('```')) {
-        // Extract content between code fences
         const codeBlockMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/);
         if (codeBlockMatch) {
             jsonStr = codeBlockMatch[1].trim();
         }
     }
 
-    // Strategy 2: Find JSON object by looking for { ... }
-    if (!jsonStr.startsWith('{')) {
-        const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-            jsonStr = jsonMatch[0];
-        }
-    }
+    // Strategy 2: Extract JSON object or array from surrounding text
+    const firstBrace = jsonStr.search(/[{[]/);
+    if (firstBrace !== -1) {
+        const isArray = jsonStr[firstBrace] === '[';
+        const lastBrace = jsonStr.lastIndexOf(isArray ? ']' : '}');
 
-    // Strategy 3: Remove any leading/trailing text outside the JSON
-    const firstBrace = jsonStr.indexOf('{');
-    const lastBrace = jsonStr.lastIndexOf('}');
-    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-        jsonStr = jsonStr.substring(firstBrace, lastBrace + 1);
+        if (lastBrace !== -1 && lastBrace > firstBrace) {
+            jsonStr = jsonStr.substring(firstBrace, lastBrace + 1);
+        }
     }
 
     try {
         const parsed = JSON.parse(jsonStr);
+        let normalized = { ...parsed };
 
-        // Handle different response structures
-        // Some models return { labelSize, objects } directly
-        // Others might wrap it differently
-
-        // Normalize the response
-        let normalized = parsed;
-
-        // If there's a nested "label" or "design" object, extract it
-        if (parsed.label && typeof parsed.label === 'object') {
+        // Handle root-level array (treat as objects list)
+        if (Array.isArray(parsed)) {
+            normalized = { objects: parsed };
+        }
+        // Handle nested "label" or "design" objects
+        else if (parsed.label && typeof parsed.label === 'object') {
             normalized = parsed.label;
         } else if (parsed.design && typeof parsed.design === 'object') {
             normalized = parsed.design;
         }
 
-        // Ensure we have the objects array
+        // Locate the objects array: search common keys
         if (!normalized.objects || !Array.isArray(normalized.objects)) {
-            // Check if objects is at root level with different name
-            if (parsed.elements && Array.isArray(parsed.elements)) {
-                normalized.objects = parsed.elements;
-            } else if (parsed.items && Array.isArray(parsed.items)) {
-                normalized.objects = parsed.items;
+            const possibleKeys = ['content', 'elements', 'items', 'shapes', 'components'];
+            const foundKey = possibleKeys.find(key => Array.isArray(parsed[key]));
+
+            if (foundKey) {
+                normalized.objects = parsed[foundKey];
             } else {
-                throw new Error('Invalid response: missing objects array');
+                // Last resort: find ANY array property at root
+                const anyArrayKey = Object.keys(parsed).find(key => Array.isArray(parsed[key]));
+                if (anyArrayKey) {
+                    normalized.objects = parsed[anyArrayKey];
+                } else {
+                    throw new Error('Invalid response: missing objects array');
+                }
             }
         }
 
@@ -390,17 +407,20 @@ function parseResponse(response) {
             normalized.labelSize = { width: 50, height: 15 };
         }
 
-        // Normalize object properties (some models use different property names)
+        // Normalize object properties
         normalized.objects = normalized.objects.map(obj => {
             const normalized_obj = { ...obj };
 
-            // Normalize property names
             if (obj.x !== undefined && obj.left === undefined) normalized_obj.left = obj.x;
             if (obj.y !== undefined && obj.top === undefined) normalized_obj.top = obj.y;
             if (obj.font_size !== undefined && obj.fontSize === undefined) normalized_obj.fontSize = obj.font_size;
             if (obj.font_weight !== undefined && obj.fontWeight === undefined) normalized_obj.fontWeight = obj.font_weight;
             if (obj.text_align !== undefined && obj.textAlign === undefined) normalized_obj.textAlign = obj.text_align;
             if (obj.bold === true && !obj.fontWeight) normalized_obj.fontWeight = 'bold';
+
+            // Map "rect" stroke defaults if missing
+            if (obj.type === 'rect' && !obj.stroke) obj.stroke = '#000000';
+            if (obj.type === 'rect' && !obj.strokeWidth) obj.strokeWidth = 2;
 
             return normalized_obj;
         });
@@ -409,7 +429,7 @@ function parseResponse(response) {
     } catch (error) {
         console.error('Failed to parse LLM response:', response);
         console.error('Attempted to parse:', jsonStr);
-        throw new Error(`Failed to parse AI response: ${error.message}. Check debug logs for raw response.`);
+        throw new Error(`Failed to parse AI response: ${error.message}. Check debug logs.`);
     }
 }
 

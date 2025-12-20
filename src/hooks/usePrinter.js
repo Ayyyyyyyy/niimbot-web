@@ -97,6 +97,15 @@ export function usePrinter() {
             clientRef.current = client;
             await client.connect();
 
+            // Wait for connection to stabilize before enabling heartbeat
+            await new Promise(resolve => setTimeout(resolve, 250));
+
+            try {
+                client.startHeartbeat();
+            } catch (hbErr) {
+                console.warn('Failed to start heartbeat:', hbErr);
+            }
+
         } catch (err) {
             setIsConnecting(false);
             setConnectionStatus('Connection failed');
@@ -198,8 +207,9 @@ export function usePrinter() {
             setIsDetecting(false);
 
             // Some printers or label types may not support RFID
-            if (err.message?.includes('NotSupported') || err.message?.includes('timeout')) {
-                setError('RFID not supported or no tag detected. Using manual label size.');
+            const msg = err.message?.toLowerCase() || '';
+            if (msg.includes('notsupported') || msg.includes('timeout') || msg.includes('waiting')) {
+                setError('RFID not supported or tag read failed. Using manual label size.');
             } else {
                 setError(err.message || 'Failed to detect paper');
             }
