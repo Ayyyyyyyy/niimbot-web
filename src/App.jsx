@@ -83,6 +83,16 @@ function App() {
     }
   }, [printer]);
 
+  // Auto-dismiss detected label notification
+  useEffect(() => {
+    if (detectedLabel) {
+      const timer = setTimeout(() => {
+        setDetectedLabel(null);
+      }, 5000); // 5 seconds
+      return () => clearTimeout(timer);
+    }
+  }, [detectedLabel]);
+
   // Export canvas to JSON file
   const handleExport = useCallback(() => {
     if (!fabricCanvasRef.current) return;

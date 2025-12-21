@@ -98,12 +98,17 @@ export function usePrinter() {
             await client.connect();
 
             // Wait for connection to stabilize before enabling heartbeat
-            await new Promise(resolve => setTimeout(resolve, 250));
+            await new Promise(resolve => setTimeout(resolve, 500));
 
             try {
+                // Force a significant data exchange to wake up the printer (Green LED)
+                // Requesting RFID info is a standard "ready check" that updates state without printing
+                const info = await client.abstraction.rfidInfo();
+                setRfidInfo(info);
+
                 client.startHeartbeat();
             } catch (hbErr) {
-                console.warn('Failed to start heartbeat:', hbErr);
+                console.warn('Failed to start heartbeat/handshake:', hbErr);
             }
 
         } catch (err) {
@@ -244,8 +249,8 @@ export function usePrinter() {
 
         try {
             // Clean canvas to remove anti-aliasing artifacts (gray pixels become dots)
-            // threshold=200 means pixels with luminance > 200 become white, others become black
-            const cleanedCanvas = cleanCanvasForPrint(canvas, 200);
+            // threshold=128 means pixels lighter than 50% gray become white
+            const cleanedCanvas = cleanCanvasForPrint(canvas, 128);
 
             // Encode cleaned canvas for printer (converts to B&W bitmap)
             const encoded = ImageEncoder.encodeCanvas(cleanedCanvas, direction);

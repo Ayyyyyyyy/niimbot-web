@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
-import { X, Search, LayoutTemplate, Beaker, Package, Tag, Truck, Users, QrCode, Box, Ruler, Pill } from 'lucide-react';
-import { LABEL_TEMPLATES, VENDORS, getPeptidesByCategory, getTemplatesByCategory, searchTemplates } from '../utils/templates';
+import { X, Search, LayoutTemplate, Beaker, Package, Tag, Truck, Users, QrCode, Box, Ruler, Pill, Layout, Columns, CreditCard, Home, FlaskConical } from 'lucide-react';
+import { LABEL_TEMPLATES, getTemplatesByCategory, searchTemplates } from '../utils/templates';
 
 /**
  * Category icons mapping
@@ -14,7 +14,9 @@ const CATEGORY_ICONS = {
     'Warehouse': Box,
     'Lab': Beaker,
     'Medical': Pill,
-    'Peptides': Beaker,
+    'Peptide': FlaskConical,
+    'Design': Layout,
+    'Home': Home,
 };
 
 /**
@@ -36,7 +38,6 @@ const LABEL_SIZES = [
 export function TemplatePicker({ isOpen, onClose, onSelectTemplate }) {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('All');
-    const [selectedVendor, setSelectedVendor] = useState('');
     const [selectedLabelSize, setSelectedLabelSize] = useState(LABEL_SIZES[0]); // Default to 50x15mm
 
     // Get categorized templates
@@ -60,21 +61,10 @@ export function TemplatePicker({ isOpen, onClose, onSelectTemplate }) {
         return templates;
     }, [searchQuery, selectedCategory]);
 
-    // Handle template selection with vendor and label size override
+    // Handle template selection with label size override
     const handleSelect = (template) => {
-        // Clone template but KEEP original size for scaling calculations
-        const templateToApply = {
-            ...template,
-            objects: template.objects.map(obj => {
-                if (obj.text === '___' || obj.text === 'VND') {
-                    return { ...obj, text: selectedVendor || '___' };
-                }
-                return obj;
-            }),
-        };
-
         // Pass both the template AND the target size
-        onSelectTemplate(templateToApply, {
+        onSelectTemplate(template, {
             width: selectedLabelSize.width,
             height: selectedLabelSize.height
         });
@@ -97,7 +87,7 @@ export function TemplatePicker({ isOpen, onClose, onSelectTemplate }) {
                     </button>
                 </div>
 
-                {/* Settings Bar - Label Size, Vendor */}
+                {/* Settings Bar - Label Size */}
                 <div className="p-4 bg-accent/20 border-b border-gray-700">
                     <div className="flex items-center gap-6 flex-wrap">
                         {/* Label Size Selector - Prominent */}
@@ -118,21 +108,6 @@ export function TemplatePicker({ isOpen, onClose, onSelectTemplate }) {
                                     </button>
                                 ))}
                             </div>
-                        </div>
-
-                        {/* Vendor Selector */}
-                        <div className="flex items-center gap-2">
-                            <span className="text-sm text-gray-300">Vendor:</span>
-                            <select
-                                value={selectedVendor}
-                                onChange={(e) => setSelectedVendor(e.target.value)}
-                                className="w-44 px-3 py-1.5 bg-gray-700 rounded-lg border border-gray-600 text-sm"
-                            >
-                                <option value="">No Vendor</option>
-                                {VENDORS.map(v => (
-                                    <option key={v.code} value={v.code}>{v.code} - {v.name}</option>
-                                ))}
-                            </select>
                         </div>
                     </div>
                 </div>

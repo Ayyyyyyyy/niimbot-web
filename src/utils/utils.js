@@ -76,7 +76,7 @@ export function downloadFile(content, filename) {
  * @param {number} threshold - Threshold 0-255 (pixels darker than this become black)
  * @returns {HTMLCanvasElement} Cleaned canvas
  */
-export function cleanCanvasForPrint(sourceCanvas, threshold = 200) {
+export function cleanCanvasForPrint(sourceCanvas, threshold = 128) {
     // Create a new canvas with the same dimensions
     const cleanCanvas = document.createElement('canvas');
     cleanCanvas.width = sourceCanvas.width;
@@ -84,6 +84,10 @@ export function cleanCanvasForPrint(sourceCanvas, threshold = 200) {
 
     const sourceCtx = sourceCanvas.getContext('2d');
     const cleanCtx = cleanCanvas.getContext('2d');
+
+    // Fill with white first to handle transparency
+    cleanCtx.fillStyle = '#FFFFFF';
+    cleanCtx.fillRect(0, 0, cleanCanvas.width, cleanCanvas.height);
 
     // Get image data
     const imageData = sourceCtx.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height);
@@ -96,22 +100,21 @@ export function cleanCanvasForPrint(sourceCanvas, threshold = 200) {
         const b = data[i + 2];
         const a = data[i + 3];
 
-        // Calculate luminance (grayscale value)
-        const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
+        // Improve luminance calculation (standard Rec. 709)
+        const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
 
-        // Apply threshold - if luminance is above threshold, make white
-        // Also account for alpha - transparent pixels should be white
-        if (luminance > threshold || a < 128) {
+        // Binarize based on threshold: lighter > threshold = white, darker <= threshold = black
+        // Also treat transparent pixels (a < 128) as white
+        if (a < 128 || luminance > threshold) {
             data[i] = 255;     // R
             data[i + 1] = 255; // G
             data[i + 2] = 255; // B
             data[i + 3] = 255; // A
         } else {
-            // Make pure black
             data[i] = 0;       // R
             data[i + 1] = 0;   // G
             data[i + 2] = 0;   // B
-            data[i + 3] = 255; // A
+            data[i + 3] = 255; // A (Fully opaque black)
         }
     }
 

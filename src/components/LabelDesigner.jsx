@@ -875,18 +875,28 @@ export function LabelDesigner({
                             textxalign: 'center',
                         });
                         const img = await FabricImage.fromURL(tempCanvas.toDataURL());
+
+                        // Calculate scale to match requested width if provided, otherwise use contentScale
+                        let finalScale = contentScale;
+                        if (obj.width) {
+                            const targetWidth = obj.width * scaleX;
+                            if (img.width > 0) {
+                                finalScale = targetWidth / img.width;
+                            }
+                        }
+
                         img.set({ left: scaledLeft, top: scaledTop });
-                        img.scale(contentScale);
+                        img.scale(finalScale);
                         fabricRef.current.add(img);
                     } catch (err) {
                         console.error('Barcode generation error:', err);
                     }
                 } else if (obj.type === 'line') {
                     const line = new Line([
-                        (obj.x1 || 0) * scaleX,
-                        (obj.y1 || 0) * scaleY,
-                        (obj.x2 || 100) * scaleX,
-                        (obj.y2 || 0) * scaleY
+                        (obj.x1 ?? 0) * scaleX,
+                        (obj.y1 ?? 0) * scaleY,
+                        (obj.x2 ?? 100) * scaleX,
+                        (obj.y2 ?? 0) * scaleY
                     ], {
                         left: scaledLeft,
                         top: scaledTop,
