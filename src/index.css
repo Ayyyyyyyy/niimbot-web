@@ -46,8 +46,7 @@ body {
   align-items: center;
   justify-content: center;
   padding: 2rem;
-  background:
-    linear-gradient(90deg, #2a2a4a 1px, transparent 1px),
+  background: linear-gradient(90deg, #2a2a4a 1px, transparent 1px),
     linear-gradient(#2a2a4a 1px, transparent 1px);
   background-size: 20px 20px;
 }
