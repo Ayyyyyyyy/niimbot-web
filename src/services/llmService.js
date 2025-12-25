@@ -79,6 +79,9 @@ const STORAGE_KEYS = {
   OLLAMA_MODEL: 'ollamaModel',
   GEMINI_API_KEY: 'geminiApiKey',
   GEMINI_MODEL: 'geminiModel',
+  PRINT_DIRECTION: 'printDirection',
+  PRINT_OFFSET_X: 'printOffsetX',
+  PRINT_OFFSET_Y: 'printOffsetY',
 }
 
 /**
@@ -91,6 +94,9 @@ export function getLLMSettings() {
     ollamaModel: localStorage.getItem(STORAGE_KEYS.OLLAMA_MODEL) || '',
     geminiApiKey: localStorage.getItem(STORAGE_KEYS.GEMINI_API_KEY) || '',
     geminiModel: localStorage.getItem(STORAGE_KEYS.GEMINI_MODEL) || 'gemini-1.5-flash',
+    printDirection: localStorage.getItem(STORAGE_KEYS.PRINT_DIRECTION) || 'left',
+    printOffsetX: parseFloat(localStorage.getItem(STORAGE_KEYS.PRINT_OFFSET_X) || '0'),
+    printOffsetY: parseFloat(localStorage.getItem(STORAGE_KEYS.PRINT_OFFSET_Y) || '0'),
   }
 }
 
@@ -104,6 +110,10 @@ export function saveLLMSettings(settings) {
   if (settings.geminiApiKey !== undefined)
     localStorage.setItem(STORAGE_KEYS.GEMINI_API_KEY, settings.geminiApiKey)
   if (settings.geminiModel) localStorage.setItem(STORAGE_KEYS.GEMINI_MODEL, settings.geminiModel)
+
+  if (settings.printDirection) localStorage.setItem(STORAGE_KEYS.PRINT_DIRECTION, settings.printDirection)
+  if (settings.printOffsetX !== undefined) localStorage.setItem(STORAGE_KEYS.PRINT_OFFSET_X, settings.printOffsetX)
+  if (settings.printOffsetY !== undefined) localStorage.setItem(STORAGE_KEYS.PRINT_OFFSET_Y, settings.printOffsetY)
 }
 
 /**

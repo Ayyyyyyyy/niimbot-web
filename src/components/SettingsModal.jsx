@@ -7,6 +7,7 @@ import {
   Server,
   Settings as SettingsIcon,
   Sparkles,
+  Printer,
   X,
 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
@@ -111,6 +112,71 @@ export function SettingsModal({ isOpen, onClose }) {
 
         {/* Content */}
         <div className='flex-1 overflow-y-auto p-6 space-y-6'>
+          {/* Printer Settings Section */}
+          <section>
+            <h3 className='text-lg font-semibold text-white mb-4 flex items-center gap-2'>
+              <Printer size={20} className='text-cyan-400' />
+              Printer Configuration
+            </h3>
+
+            <div className='bg-gray-800/50 rounded-lg p-4 space-y-4'>
+              {/* Print Direction */}
+              <div>
+                <label className='text-sm font-medium text-gray-300 block mb-2'>Print Direction</label>
+                <div className='flex gap-3'>
+                  <button
+                    onClick={() => updateField('printDirection', 'left')}
+                    className={`flex-1 p-3 rounded-lg border transition-all ${formData.printDirection === 'left'
+                      ? 'bg-cyan-600 border-cyan-400 text-white'
+                      : 'bg-gray-700 border-gray-600 hover:bg-gray-600'
+                      }`}
+                  >
+                    <div className='text-sm font-medium'>Left</div>
+                    <div className='text-xs opacity-70'>Standard (Landscape)</div>
+                  </button>
+                  <button
+                    onClick={() => updateField('printDirection', 'top')}
+                    className={`flex-1 p-3 rounded-lg border transition-all ${formData.printDirection === 'top'
+                      ? 'bg-cyan-600 border-cyan-400 text-white'
+                      : 'bg-gray-700 border-gray-600 hover:bg-gray-600'
+                      }`}
+                  >
+                    <div className='text-sm font-medium'>Top</div>
+                    <div className='text-xs opacity-70'>Portrait / Alternate</div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Print Offsets */}
+              <div>
+                <label className='text-sm font-medium text-gray-300 block mb-2'>Print Alignment Adjustment</label>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className='text-xs text-gray-400 block mb-1'>X Offset (mm)</label>
+                    <input
+                      type="number"
+                      value={formData.printOffsetX || 0}
+                      onChange={(e) => updateField('printOffsetX', parseFloat(e.target.value) || 0)}
+                      className='w-full px-3 py-2 bg-gray-700 rounded-lg border border-gray-600 focus:border-cyan-400 focus:outline-none'
+                    />
+                  </div>
+                  <div>
+                    <label className='text-xs text-gray-400 block mb-1'>Y Offset (mm)</label>
+                    <input
+                      type="number"
+                      value={formData.printOffsetY || 0}
+                      onChange={(e) => updateField('printOffsetY', parseFloat(e.target.value) || 0)}
+                      className='w-full px-3 py-2 bg-gray-700 rounded-lg border border-gray-600 focus:border-cyan-400 focus:outline-none'
+                    />
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">Adjust values if print is off-center (Negative values move Left/Up)</p>
+              </div>
+            </div>
+          </section>
+
+          <div className="h-px bg-gray-700 my-2" />
+
           {/* AI Provider Section */}
           <section>
             <h3 className='text-lg font-semibold text-white mb-4 flex items-center gap-2'>
@@ -125,8 +191,8 @@ export function SettingsModal({ isOpen, onClose }) {
                 <button
                   onClick={() => updateField('provider', 'ollama')}
                   className={`flex-1 p-3 rounded-lg border transition-all ${formData.provider === 'ollama'
-                      ? 'bg-highlight border-highlight text-white'
-                      : 'bg-gray-700 border-gray-600 hover:bg-gray-600'
+                    ? 'bg-highlight border-highlight text-white'
+                    : 'bg-gray-700 border-gray-600 hover:bg-gray-600'
                     }`}
                 >
                   <Server size={20} className='mx-auto mb-1' />
@@ -136,8 +202,8 @@ export function SettingsModal({ isOpen, onClose }) {
                 <button
                   onClick={() => updateField('provider', 'gemini')}
                   className={`flex-1 p-3 rounded-lg border transition-all ${formData.provider === 'gemini'
-                      ? 'bg-highlight border-highlight text-white'
-                      : 'bg-gray-700 border-gray-600 hover:bg-gray-600'
+                    ? 'bg-highlight border-highlight text-white'
+                    : 'bg-gray-700 border-gray-600 hover:bg-gray-600'
                     }`}
                 >
                   <Sparkles size={20} className='mx-auto mb-1' />
@@ -284,8 +350,8 @@ export function SettingsModal({ isOpen, onClose }) {
             {discoveryStatus && (
               <div
                 className={`mt-4 text-sm p-3 rounded-lg ${discoveryStatus.success
-                    ? 'bg-green-500/20 text-green-400'
-                    : 'bg-red-500/20 text-red-400'
+                  ? 'bg-green-500/20 text-green-400'
+                  : 'bg-red-500/20 text-red-400'
                   }`}
               >
                 {discoveryStatus.message}
@@ -307,8 +373,8 @@ export function SettingsModal({ isOpen, onClose }) {
             <button type='button'
               onClick={handleSave}
               className={`px-6 py-2 rounded-lg font-medium flex items-center gap-2 transition-all ${isSaved
-                  ? 'bg-green-600 text-white'
-                  : 'bg-highlight hover:bg-highlight/80 text-white'
+                ? 'bg-green-600 text-white'
+                : 'bg-highlight hover:bg-highlight/80 text-white'
                 }`}
             >
               {isSaved ? <Check size={18} /> : <Save size={18} />}

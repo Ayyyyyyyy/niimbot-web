@@ -1,9 +1,12 @@
 import { AlertTriangle, CheckCircle } from 'lucide-react'
+import { StaticCanvas } from 'fabric'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { LabelDesigner } from './components/LabelDesigner'
+import { PrintDialog } from './components/PrintDialog'
 import { SettingsModal } from './components/SettingsModal'
 import { TopBar } from './components/TopBar'
 import { usePrinter } from './hooks/usePrinter'
+import { getLLMSettings } from './services/llmService'
 import { lookupLabelByBarcode } from './utils/labelDatabase'
 import { DEFAULT_LABEL, downloadFile, isSecureContext } from './utils/utils'
 
@@ -18,6 +21,7 @@ function App() {
     return localStorage.getItem('autoSaveBeforePrint') === 'true'
   })
   const [showSettings, setShowSettings] = useState(false)
+  const [showPrintDialog, setShowPrintDialog] = useState(false)
 
   // Canvas reference for printing and export
   const canvasRef = useRef(null)
@@ -148,12 +152,18 @@ function App() {
     input.click()
   }, [])
 
-  // Print the current design
-  const handlePrint = useCallback(async () => {
-    if (!canvasRef.current || !printer.isConnected) return
+  // Open Print Dialog
+  const handlePrintRequest = useCallback(() => {
+    if (!printer.isConnected) return
+    setShowPrintDialog(true)
+  }, [printer.isConnected])
+
+  // Execute print with settings from dialog
+  const executePrint = useCallback(async (printSettings) => {
+    if (!printer.isConnected || !fabricCanvasRef.current) return
 
     // Auto-save before printing if enabled
-    if (autoSaveBeforePrint && fabricCanvasRef.current) {
+    if (autoSaveBeforePrint) {
       const data = {
         version: '1.0',
         labelWidth,
@@ -165,49 +175,79 @@ function App() {
       downloadFile(json, filename)
     }
 
-    // Get the underlying canvas element from Fabric
-    const fabricCanvas = fabricCanvasRef.current
-    if (!fabricCanvas) return
+    try {
+      // 1. Get current design as JSON (scene coordinates, independent of zoom)
+      const json = fabricCanvasRef.current.toJSON()
 
-    // Save current zoom state
-    const currentZoom = fabricCanvas.getZoom()
+      // 2. Calculate target 1:1 pixel dimensions (203 DPI)
+      const { mmToPixels } = await import('./utils/utils')
+      const targetWidth = mmToPixels(labelWidth)
+      const targetHeight = mmToPixels(labelHeight)
 
-    // Deselect objects before printing to hide selection UI
-    fabricCanvas.discardActiveObject()
+      // 3. Create a detached canvas element of the exact target size
+      const printCanvasEl = document.createElement('canvas')
+      printCanvasEl.width = targetWidth
+      printCanvasEl.height = targetHeight
 
-    // Reset to 1:1 scale for printing (203 DPI)
-    // We must ensure the canvas is at the correct pixel dimensions for the printer
-    const { mmToPixels } = await import('./utils/utils')
-    const targetWidth = mmToPixels(labelWidth)
-    const targetHeight = mmToPixels(labelHeight)
+      // 4. Create a StaticCanvas on this element
+      const staticCanvas = new StaticCanvas(printCanvasEl, {
+        width: targetWidth,
+        height: targetHeight,
+        backgroundColor: '#ffffff', // Ensure white background
+      })
 
-    fabricCanvas.setDimensions({
-      width: targetWidth,
-      height: targetHeight,
-    })
-    fabricCanvas.setZoom(1)
-    fabricCanvas.renderAll()
+      // 5. Load the design
+      await staticCanvas.loadFromJSON(json)
 
-    // Get the canvas element
-    const canvasEl = canvasRef.current
+      // 6. Force 1:1 zoom on the static canvas (just in case JSON carried viewport)
+      staticCanvas.setZoom(1)
+      staticCanvas.setViewportTransform([1, 0, 0, 1, 0, 0])
 
-    // Print
-    const success = await printer.print(canvasEl, {
-      direction: 'left',
-      quantity: 1,
-    })
+      // 7. Render
+      staticCanvas.renderAll()
 
-    // Restore zoom state layout
-    fabricCanvas.setDimensions({
-      width: targetWidth * currentZoom,
-      height: targetHeight * currentZoom,
-    })
-    fabricCanvas.setZoom(currentZoom)
-    fabricCanvas.renderAll()
+      // 8. Apply Print Settings (Offset & Direction)
+      const direction = printSettings.direction || 'left'
+      const quantity = printSettings.quantity || 1
 
-    if (success) {
-      // Could show success notification here
-      console.log('Print completed successfully')
+      // Convert offsets from mm to pixels
+      const offsetX = mmToPixels(printSettings.offsetX || 0)
+      const offsetY = mmToPixels(printSettings.offsetY || 0)
+
+      // If offsets are present, we need to shift the content
+      let finalCanvasForPrint = printCanvasEl
+
+      if (offsetX !== 0 || offsetY !== 0) {
+        const shiftedCanvas = document.createElement('canvas')
+        shiftedCanvas.width = targetWidth
+        shiftedCanvas.height = targetHeight
+        const ctx = shiftedCanvas.getContext('2d')
+
+        // Fill white
+        ctx.fillStyle = '#FFFFFF'
+        ctx.fillRect(0, 0, targetWidth, targetHeight)
+
+        // Draw with offset
+        ctx.drawImage(printCanvasEl, offsetX, offsetY)
+
+        finalCanvasForPrint = shiftedCanvas
+      }
+
+      // 9. Send to printer
+      const success = await printer.print(finalCanvasForPrint, {
+        direction: direction,
+        quantity: quantity,
+      })
+
+      // 10. Cleanup
+      staticCanvas.dispose()
+
+      if (success) {
+        console.log('Print completed successfully')
+      }
+    } catch (err) {
+      console.error('Print generation failed:', err)
+      alert('Failed to generate print data')
     }
   }, [printer, autoSaveBeforePrint, labelWidth, labelHeight])
 
@@ -256,7 +296,7 @@ function App() {
         onReconnect={printer.reconnect}
         onDisconnect={printer.disconnect}
         onDetectPaper={handleDetectPaper}
-        onPrint={handlePrint}
+        onPrint={handlePrintRequest}
         onClearError={printer.clearError}
         // File actions
         onExport={handleExport}
@@ -284,6 +324,14 @@ function App() {
 
       {/* Settings Modal */}
       <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} />
+
+      {/* Print Dialog */}
+      <PrintDialog
+        isOpen={showPrintDialog}
+        onClose={() => setShowPrintDialog(false)}
+        onPrint={executePrint}
+        isPrinting={printer.isPrinting}
+      />
     </div>
   )
 }
