@@ -59,7 +59,228 @@ export const LABEL_TEMPLATES = [
       { type: 'text', text: 'A-01-23', left: 40, top: 25, fontSize: 14 },
     ],
   },
+  {
+    id: 'pro-injection',
+    name: 'Injection Vial (50x30)',
+    description: 'Pharma style with side warnings',
+    category: 'Peptide',
+    labelSize: { width: 50, height: 30 },
+    objects: [
+      // --- Simplified High-Legibility Layout ---
 
+      // Header: NDC & Rx Only
+      { type: 'text', text: 'NDC 0009-0086', left: 25, top: 25, fontSize: 18, fill: '#000000', fontWeight: 'bold' },
+      { type: 'text', text: 'Rx ONLY', left: 375, top: 25, fontSize: 18, fontWeight: 'bold', fill: '#DC2626', originX: 'right' },
+
+      // Main Title (Massive)
+      {
+        type: 'text',
+        text: 'L-CARNITINE',
+        left: 200,
+        top: 65,
+        fontSize: 42,
+        fontWeight: 'bold',
+        fill: '#DC2626',
+        textAlign: 'center',
+        originX: 'center',
+        originY: 'center',
+      },
+      {
+        type: 'text',
+        text: 'INJECTION, USP',
+        left: 200,
+        top: 95,
+        fontSize: 22,
+        fontWeight: 'bold',
+        fill: '#000000',
+        textAlign: 'center',
+        originX: 'center',
+        originY: 'center',
+      },
+
+      // Dosage Box (Full Width centered)
+      {
+        type: 'rect',
+        left: 50,
+        top: 120,
+        width: 300,
+        height: 50,
+        fill: '#DC2626',
+        rx: 5,
+        ry: 5,
+      },
+      {
+        type: 'text',
+        text: '500 mg/mL',
+        left: 200,
+        top: 145,
+        fontSize: 36,
+        fontWeight: 'bold',
+        fill: '#FFFFFF',
+        textAlign: 'center',
+        originX: 'center',
+        originY: 'center',
+      },
+
+      // Bottom Metadata
+      { type: 'text', text: 'Multi-Dose Vial', left: 200, top: 185, fontSize: 20, fontWeight: 'bold', originX: 'center' },
+
+      { type: 'line', left: 20, top: 200, x1: 0, y1: 0, x2: 360, y2: 0, stroke: 'black', strokeWidth: 2 },
+
+      // Footer: LOT / EXP
+      { type: 'text', text: 'LOT: A123', left: 30, top: 215, fontSize: 18, fontWeight: 'bold' },
+    ],
+  },
+  {
+    id: 'pro-injection-15',
+    name: 'Injection Vial (50x15)',
+    description: 'Compact 50x15mm Pharma Label',
+    category: 'Peptide',
+    labelSize: { width: 50, height: 15 },
+    objects: [
+      // --- Layout for 50x15mm (approx 400px x 120px) ---
+
+      // 1. Main Title (Top-Left)
+      {
+        type: 'text',
+        text: 'L-CARNITINE',
+        left: 10,
+        top: 15,
+        fontSize: 28, // Max size for top half
+        fontWeight: 'bold',
+        fill: '#DC2626', // Red
+        originX: 'left',
+      },
+
+      // 2. Dosage Box (Bottom-Left)
+      {
+        type: 'rect',
+        left: 10,
+        top: 60,
+        width: 180,
+        height: 50,
+        fill: '#DC2626',
+        rx: 4,
+        ry: 4,
+      },
+      {
+        type: 'text',
+        text: '500 mg/mL',
+        left: 100,
+        top: 85,
+        fontSize: 24,
+        fontWeight: 'bold',
+        fill: '#FFFFFF',
+        textAlign: 'center',
+        originX: 'center',
+        originY: 'center',
+      },
+
+      // 3. Middle Data (Type)
+      {
+        type: 'text',
+        text: 'Injection, USP',
+        left: 200,
+        top: 25,
+        fontSize: 14,
+        fontWeight: 'bold',
+        fill: '#000000',
+        originX: 'center',
+      },
+      {
+        type: 'text',
+        text: 'Multi-Dose',
+        left: 200,
+        top: 45,
+        fontSize: 12,
+        fontWeight: 'bold',
+        fill: '#000000',
+        originX: 'center',
+      },
+
+      // 4. Right Side (QR & Meta)
+      {
+        type: 'qrcode',
+        value: 'https://example.com',
+        left: 310,
+        top: 10,
+        width: 100, // Max height fits in 15mm (120px) -> 100px with padding
+        height: 100,
+      },
+
+      // Vertical text for "Rx Only" near QR
+      {
+        type: 'text',
+        text: 'Rx ONLY',
+        left: 290,
+        top: 60,
+        fontSize: 14,
+        fontWeight: 'bold',
+        angle: -90,
+        fill: '#DC2626',
+        originX: 'center',
+        originY: 'center',
+      }
+    ],
+  },
+
+  {
+    id: 'peptide-recon-table',
+    name: 'Reconstitution Table (50x30)',
+    description: 'Dosing lookup table (5mg / 2mL)',
+    category: 'Peptide',
+    labelSize: { width: 50, height: 30 },
+    objects: [
+      // Header
+      {
+        type: 'text',
+        text: 'BPC-157 (5mg)',
+        left: 200,
+        top: 25,
+        fontSize: 26,
+        fontWeight: 'bold',
+        fill: '#DC2626',
+        textAlign: 'center',
+        originX: 'center',
+        originY: 'center',
+      },
+      {
+        type: 'text',
+        text: 'Add 2mL Bacteriostatic Water',
+        left: 200,
+        top: 50,
+        fontSize: 16,
+        fontWeight: 'bold',
+        fill: '#000000',
+        textAlign: 'center',
+        originX: 'center',
+        originY: 'center',
+      },
+
+      // Table Header Bar
+      { type: 'rect', left: 20, top: 70, width: 360, height: 30, fill: '#000000', rx: 3, ry: 3 },
+      { type: 'text', text: 'DOSE', left: 110, top: 85, fontSize: 16, fontWeight: 'bold', fill: '#FFFFFF', originX: 'center', originY: 'center' },
+      { type: 'text', text: 'PULL TO (IU)', left: 290, top: 85, fontSize: 16, fontWeight: 'bold', fill: '#FFFFFF', originX: 'center', originY: 'center' },
+
+      // Row 1
+      { type: 'text', text: '250 mcg', left: 110, top: 115, fontSize: 20, fontWeight: 'bold', originX: 'center', originY: 'center' },
+      { type: 'text', text: '10 IU', left: 290, top: 115, fontSize: 20, fontWeight: 'bold', originX: 'center', originY: 'center' },
+      { type: 'line', left: 20, top: 130, x1: 0, y1: 0, x2: 360, y2: 0, stroke: '#000000', strokeWidth: 1 },
+
+      // Row 2
+      { type: 'text', text: '500 mcg', left: 110, top: 145, fontSize: 20, fontWeight: 'bold', originX: 'center', originY: 'center' },
+      { type: 'text', text: '20 IU', left: 290, top: 145, fontSize: 20, fontWeight: 'bold', originX: 'center', originY: 'center' },
+      { type: 'line', left: 20, top: 160, x1: 0, y1: 0, x2: 360, y2: 0, stroke: '#000000', strokeWidth: 1 },
+
+      // Row 3
+      { type: 'text', text: '1000 mcg', left: 110, top: 175, fontSize: 20, fontWeight: 'bold', originX: 'center', originY: 'center' },
+      { type: 'text', text: '40 IU', left: 290, top: 175, fontSize: 20, fontWeight: 'bold', originX: 'center', originY: 'center' },
+
+      // Footer
+      { type: 'rect', left: 100, top: 195, width: 200, height: 20, fill: '#DC2626', rx: 10, ry: 10 },
+      { type: 'text', text: 'Refrigerate after mixing', left: 200, top: 205, fontSize: 12, fill: '#FFFFFF', fontWeight: 'bold', originX: 'center', originY: 'center' },
+    ]
+  },
   // --- Professional / Lab Templates (High Density) ---
 
   {

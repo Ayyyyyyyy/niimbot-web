@@ -76,7 +76,7 @@ export function downloadFile(content, filename) {
  * @param {number} threshold - Threshold 0-255 (defaults to 128)
  * @returns {HTMLCanvasElement} Cleaned canvas
  */
-export function cleanCanvasForPrint(sourceCanvas, threshold = 128) {
+export function cleanCanvasForPrint(sourceCanvas, threshold = 195) {
   // Create a new canvas with the same dimensions
   const cleanCanvas = document.createElement('canvas')
   cleanCanvas.width = sourceCanvas.width
@@ -85,77 +85,38 @@ export function cleanCanvasForPrint(sourceCanvas, threshold = 128) {
   const sourceCtx = sourceCanvas.getContext('2d')
   const cleanCtx = cleanCanvas.getContext('2d')
 
-  // Fill with white first
+  // Fill with white first (background safety)
   cleanCtx.fillStyle = '#FFFFFF'
   cleanCtx.fillRect(0, 0, cleanCanvas.width, cleanCanvas.height)
 
-  // Get image data
-  const imageData = sourceCtx.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height)
-  const data = imageData.data
-  const width = sourceCanvas.width
-  const height = sourceCanvas.height
+  // Draw source image onto white background to handle transparency
+  cleanCtx.drawImage(sourceCanvas, 0, 0)
 
-  // Convert to grayscale first to simplify processing
-  // We'll use a float32 array for precise error calculation
-  const grayscale = new Float32Array(width * height)
+  // Get image data
+  const imageData = cleanCtx.getImageData(0, 0, cleanCanvas.width, cleanCanvas.height)
+  const data = imageData.data
 
   for (let i = 0; i < data.length; i += 4) {
     const r = data[i]
     const g = data[i + 1]
     const b = data[i + 2]
-    // Treat transparent pixels as white
-    const a = data[i + 3]
+    // Alpha is already composited against white, so we can ignore it or assume 255
 
     // Standard luminance formula
-    let lum = 0.2126 * r + 0.7152 * g + 0.0722 * b
+    // 0.2126 R + 0.7152 G + 0.0722 B
+    const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b
 
-    // Mix in white for transparent areas (simulate printing on white paper)
-    if (a < 255) {
-      lum = lum * (a / 255) + 255 * (1 - a / 255)
-    }
+    // Simple Thresholding (Binarization)
+    // Sharper text, no "fuzzy dots" in background
+    const outputVal = lum < threshold ? 0 : 255
 
-    grayscale[i / 4] = lum
-  }
-
-  // Floyd-Steinberg Dithering
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
-      const idx = y * width + x
-      const oldPixel = grayscale[idx]
-      const newPixel = oldPixel < threshold ? 0 : 255
-
-      grayscale[idx] = newPixel
-
-      const quantError = oldPixel - newPixel
-
-      // Distribute error to neighbors
-      if (x + 1 < width) {
-        grayscale[idx + 1] += (quantError * 7) / 16
-      }
-      if (x - 1 >= 0 && y + 1 < height) {
-        grayscale[(y + 1) * width + (x - 1)] += (quantError * 3) / 16
-      }
-      if (y + 1 < height) {
-        grayscale[(y + 1) * width + x] += (quantError * 5) / 16
-      }
-      if (x + 1 < width && y + 1 < height) {
-        grayscale[(y + 1) * width + (x + 1)] += (quantError * 1) / 16
-      }
-    }
+    data[i] = outputVal     // R
+    data[i + 1] = outputVal // G
+    data[i + 2] = outputVal // B
+    data[i + 3] = 255       // A
   }
 
   // Write back to image data
-  for (let i = 0; i < grayscale.length; i++) {
-    const val = grayscale[i]
-    const outputVal = val < 128 ? 0 : 255 // Final clamp
-
-    data[i * 4] = outputVal // R
-    data[i * 4 + 1] = outputVal // G
-    data[i * 4 + 2] = outputVal // B
-    data[i * 4 + 3] = 255 // A (Fully opaque)
-  }
-
-  // Put cleaned image data
   cleanCtx.putImageData(imageData, 0, 0)
 
   return cleanCanvas

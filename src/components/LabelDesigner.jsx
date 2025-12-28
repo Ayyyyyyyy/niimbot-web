@@ -873,7 +873,7 @@ export function LabelDesigner({
                 bcid: obj.type === 'qrcode' ? 'qrcode' : obj.format || 'code128',
                 text: obj.value || '123456',
                 scale: obj.type === 'qrcode' ? 3 : 2,
-                height: obj.type === 'qrcode' ? undefined : 10,
+                height: obj.height || 10, // Always provide height, even for QR
                 includetext: obj.type !== 'qrcode',
                 textxalign: 'center',
               })
